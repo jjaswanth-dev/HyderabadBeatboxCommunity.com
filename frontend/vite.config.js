@@ -5,5 +5,5 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
-  },
+  }, assetsInclude: ['**/*.glb', '**/*.gltf', '**/*.bin', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.xml', '**/*.txt']
 });

@@ -2,5 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /write-blog
-
-Sitemap: https://hydbbx.com/sitemap.xml
+Sitemap: https://www.hyderabadbeatboxcommunity.in/sitemap.xml

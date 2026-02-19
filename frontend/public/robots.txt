@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /write-blog
+Disallow: /admin/
+Disallow: /write-blog/
 Sitemap: https://www.hyderabadbeatboxcommunity.in/sitemap.xml

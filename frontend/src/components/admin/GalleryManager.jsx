@@ -60,47 +60,49 @@ function GalleryManager() {
   };
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          value={newImage.image}
-          onChange={(e) => setNewImage({ ...newImage, image: e.target.value })}
-          placeholder="Image URL"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <input
-          type="text"
-          value={newImage.title}
-          onChange={(e) => setNewImage({ ...newImage, title: e.target.value })}
-          placeholder="Image Title"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Add Image
-        </button>
-      </form>
+    <div className="bg-white bg-opacity-10 p-6 rounded-xl shadow-lg h-[32rem] overflow-y-auto">
+      <div className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            value={newImage.image}
+            onChange={(e) => setNewImage({ ...newImage, image: e.target.value })}
+            placeholder="Image URL"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={newImage.title}
+            onChange={(e) => setNewImage({ ...newImage, title: e.target.value })}
+            placeholder="Image Title"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Add Image
+          </button>
+        </form>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {images.map((image) => (
-          <div key={image._id} className="bg-gray-800 p-4 rounded">
-            <img
-              src={image.image}
-              alt={image.title}
-              className="w-full h-48 object-cover rounded"
-            />
-            <p className="text-white mt-2">{image.title}</p>
-            <button
-              onClick={() => handleDelete(image._id)}
-              className="bg-red-600 text-white px-2 py-1 rounded mt-2"
-            >
-              Delete
-            </button>
-          </div>
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {images.map((image) => (
+            <div key={image._id} className="bg-white bg-opacity-20 p-4 rounded-lg">
+              <img
+                src={image.image}
+                alt={image.title}
+                className="w-full h-48 object-cover rounded-lg"
+              />
+              <p className="text-white mt-2">{image.title}</p>
+              <button
+                onClick={() => handleDelete(image._id)}
+                className="bg-red-600 text-white px-2 py-1 rounded-lg mt-2 hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

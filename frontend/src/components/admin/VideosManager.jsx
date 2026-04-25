@@ -57,47 +57,49 @@ function VideosManager() {
   };
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          value={newVideo.url}
-          onChange={(e) => setNewVideo({ ...newVideo, url: e.target.value })}
-          placeholder="YouTube URL"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <input
-          type="text"
-          value={newVideo.title}
-          onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })}
-          placeholder="Video Title"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Add Video
-        </button>
-      </form>
+    <div className="bg-white bg-opacity-10 p-6 rounded-xl shadow-lg h-[32rem] overflow-y-auto">
+      <div className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            value={newVideo.url}
+            onChange={(e) => setNewVideo({ ...newVideo, url: e.target.value })}
+            placeholder="YouTube URL"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={newVideo.title}
+            onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })}
+            placeholder="Video Title"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Add Video
+          </button>
+        </form>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {videos.map((video) => (
-          <div key={video._id} className="bg-gray-800 p-4 rounded">
-            <img
-              src={video.thumbnail}
-              alt={video.title}
-              className="w-full h-48 object-cover rounded"
-            />
-            <h3 className="text-white mt-2">{video.title}</h3>
-            <button
-              onClick={() => handleDelete(video._id)}
-              className="bg-red-600 text-white px-2 py-1 rounded mt-2"
-            >
-              Delete
-            </button>
-          </div>
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {videos.map((video) => (
+            <div key={video._id} className="bg-white bg-opacity-20 p-4 rounded-lg">
+              <img
+                src={video.thumbnail}
+                alt={video.title}
+                className="w-full h-48 object-cover rounded-lg"
+              />
+              <h3 className="text-white mt-2">{video.title}</h3>
+              <button
+                onClick={() => handleDelete(video._id)}
+                className="bg-red-600 text-white px-2 py-1 rounded-lg mt-2 hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

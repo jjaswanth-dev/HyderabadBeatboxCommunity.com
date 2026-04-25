@@ -210,31 +210,50 @@ function Events() {
             <div className="flex justify-center">
               <LoadingSpinner />
             </div>
+          ) : events.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48">
+              <img src="/no-events.svg" alt="No events" className="w-32 h-32 mb-4 animate-bounce" />
+              <span className="text-white/80 text-xl font-bold tracking-wide">No upcoming events</span>
+              <span className="text-white/50 mt-2">Stay tuned for beatbox battles & jams!</span>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {events.map((event) => (
-                <motion.button
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {events.map((event, idx) => (
+                <motion.div
                   key={event._id}
-                  className="bg-[#111] rounded-lg p-6 text-left hover:bg-[#222] transition-colors cursor-pointer border border-white/10 hover:border-[#0066FF]/50 w-full"
-                  whileHover={{ scale: 1.02 }}
+                  className="card glass-effect p-0 flex flex-col hover-scale relative group shadow-lg"
+                  whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedEvent(event)}
                 >
-                  {event.image && (
-                    <img
-                      src={event.image}
-                      alt="Event"
-                      className="w-full h-48 object-cover rounded mb-4"
-                    />
-                  )}
-                  <h3 className="text-lg font-semibold mb-2 text-center">
-                    {event.title}
-                  </h3>
-                  <div className="flex items-center justify-center text-[#0066FF] text-sm mb-2">
-                    <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">{event.date}</span>
+                  <div className="relative">
+                    {event.image && (
+                      <img
+                        src={event.image}
+                        alt="Event"
+                        className="w-full h-56 object-cover rounded-t-2xl transition-all duration-500 group-hover:scale-105"
+                      />
+                    )}
+                    <span className="absolute top-4 left-4 bg-gradient-to-r from-[#0066FF] to-blue-400 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse">
+                      {idx === 0 ? '🔥 Featured' : 'Beatbox Event'}
+                    </span>
                   </div>
-                </motion.button>
+                  <div className="flex-1 flex flex-col justify-between p-6">
+                    <h3 className="text-2xl font-extrabold mb-2 text-center text-gradient drop-shadow-lg">
+                      {event.title}
+                    </h3>
+                    <div className="flex items-center justify-center gap-2 text-[#0066FF] text-base mb-4">
+                      <Clock className="w-5 h-5 mr-1 flex-shrink-0" />
+                      <span className="truncate font-semibold">{event.date}</span>
+                    </div>
+                    <p className="text-white/80 text-center text-sm line-clamp-3 mb-4 min-h-[48px]">{event.description}</p>
+                    <div className="flex justify-center">
+                      <button className="btn-primary w-full" onClick={e => { e.stopPropagation(); setSelectedEvent(event); }}>
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
               ))}
             </div>
           )}

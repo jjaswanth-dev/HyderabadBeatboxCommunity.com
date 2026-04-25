@@ -78,84 +78,86 @@ function EventsManager() {
   };
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          value={newEvent.title}
-          onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-          placeholder="Event Title"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <input
-          type="text"
-          value={newEvent.image}
-          onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })}
-          placeholder="Event Image URL"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <input
-          type="text"
-          value={newEvent.date}
-          onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-          placeholder="Event Date"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <textarea
-          value={newEvent.description}
-          onChange={(e) =>
-            setNewEvent({ ...newEvent, description: e.target.value })
-          }
-          placeholder="Description"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <textarea
-          value={newEvent.details}
-          onChange={(e) =>
-            setNewEvent({ ...newEvent, details: e.target.value })
-          }
-          placeholder="Details (one per line)"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <input
-          type="text"
-          value={newEvent.location}
-          onChange={(e) =>
-            setNewEvent({ ...newEvent, location: e.target.value })
-          }
-          placeholder="Location"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <input
-          type="text"
-          value={newEvent.ticketLink}
-          onChange={(e) =>
-            setNewEvent({ ...newEvent, ticketLink: e.target.value })
-          }
-          placeholder="Ticket Link (Optional)"
-          className="w-full p-2 bg-gray-800 text-white rounded"
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Add Event
-        </button>
-      </form>
+    <div className="bg-white bg-opacity-10 p-6 rounded-xl shadow-lg h-[32rem] overflow-y-auto">
+      <div className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            value={newEvent.title}
+            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+            placeholder="Event Title"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={newEvent.image}
+            onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })}
+            placeholder="Event Image URL"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={newEvent.date}
+            onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+            placeholder="Event Date"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <textarea
+            value={newEvent.description}
+            onChange={(e) =>
+              setNewEvent({ ...newEvent, description: e.target.value })
+            }
+            placeholder="Description"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <textarea
+            value={newEvent.details}
+            onChange={(e) =>
+              setNewEvent({ ...newEvent, details: e.target.value })
+            }
+            placeholder="Details (one per line)"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={newEvent.location}
+            onChange={(e) =>
+              setNewEvent({ ...newEvent, location: e.target.value })
+            }
+            placeholder="Location"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={newEvent.ticketLink}
+            onChange={(e) =>
+              setNewEvent({ ...newEvent, ticketLink: e.target.value })
+            }
+            placeholder="Ticket Link (Optional)"
+            className="w-full p-3 bg-white bg-opacity-20 text-white rounded-lg border border-white/30 focus:ring-2 focus:ring-white/50 focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Add Event
+          </button>
+        </form>
 
-      <div className="space-y-4">
-        {events.map((event) => (
-          <div key={event._id} className="bg-gray-800 p-4 rounded">
-            <h3 className="text-xl text-white">{event.title}</h3>
-            <p className="text-gray-300">{event.date}</p>
-            <button
-              onClick={() => handleDelete(event._id)}
-              className="bg-red-600 text-white px-2 py-1 rounded mt-2"
-            >
-              Delete
-            </button>
-          </div>
-        ))}
+        <div className="space-y-4">
+          {events.map((event) => (
+            <div key={event._id} className="bg-white bg-opacity-20 p-4 rounded-lg">
+              <h3 className="text-xl text-white">{event.title}</h3>
+              <p className="text-gray-300">{event.date}</p>
+              <button
+                onClick={() => handleDelete(event._id)}
+                className="bg-red-600 text-white px-2 py-1 rounded-lg mt-2 hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

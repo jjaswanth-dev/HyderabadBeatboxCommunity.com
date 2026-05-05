@@ -1,8 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Section from "./Section";
+import { upload } from "@imagekit/next";
+
+const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
+const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT;
+const authenticator = async () => {
+  try {
+    const response = await fetch("/api/imagekit/auth");
+    if (!response.ok) throw new Error("Authentication failed");
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Authentication error: ${error}`);
+  }
+};
 
 export default function WriteBlog() {
   const [title, setTitle] = useState("");
@@ -12,23 +25,65 @@ export default function WriteBlog() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // 5MB Size Limit
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setError("File is too large! Please upload an image smaller than 5MB.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // 1. Get Auth Params
+      const authResponse = await fetch("/api/imagekit/auth");
+      const { token, expire, signature, publicKey } = await authResponse.json();
+
+      // 2. Upload to ImageKit
+      const result = await upload({
+        file,
+        fileName: file.name,
+        publicKey,
+        token,
+        expire,
+        signature,
+        folder: "hyd_site_blog_uimages",
+      });
+
+      setImage(result.url || "");
+      setSuccess("Image uploaded successfully!");
+    } catch (err: any) {
+      setError("Image upload failed: " + err.message);
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !content || !image || !author) {
-      setError("All fields are required.");
+    if (!title) {
+      setError("Title is required.");
+      return;
+    }
+    if (!author) {
+      setError("Author name is required.");
+      return;
+    }
+    if (!content) {
+      setError("Blog content is required.");
+      return;
+    }
+    if (!image) {
+      setError("Please upload a cover image for your blog.");
       return;
     }
 
@@ -105,15 +160,21 @@ export default function WriteBlog() {
           </div>
           <div className="mb-6">
             <label htmlFor="image" className="block text-white/80 mb-2">
-              Image
+              Blog Cover Image
             </label>
             <input
               type="file"
               id="image"
               accept="image/*"
               onChange={handleImageUpload}
-              className="w-full text-white"
+              className="w-full text-white cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
             />
+            {image && (
+              <div className="mt-4">
+                <p className="text-sm text-green-400 mb-2">Image ready!</p>
+                <img src={image} alt="Preview" className="w-full h-40 object-cover rounded-md border border-white/20" />
+              </div>
+            )}
           </div>
           <div className="text-center">
             <button

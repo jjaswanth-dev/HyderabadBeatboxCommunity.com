@@ -96,7 +96,7 @@ export default function WriteBlog() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, content, image, author }),
       });
-      setSuccess("Blog post submitted for approval!");
+      setSuccess("Blog post submitted! It will be reviewed by our admin team and published within 48 hours.");
       setTitle("");
       setContent("");
       setImage("");

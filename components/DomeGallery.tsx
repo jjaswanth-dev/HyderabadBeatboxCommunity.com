@@ -134,6 +134,7 @@ export default function DomeGallery({
   const inertiaRAF = useRef<number | null>(null);
   const pointerTypeRef = useRef<'mouse' | 'pen' | 'touch'>('mouse');
   const openingRef = useRef(false);
+  const dragRAF = useRef<number | null>(null);
 
   const scrollLockedRef = useRef(false);
   const lockScroll = useCallback(() => {
@@ -288,6 +289,7 @@ export default function DomeGallery({
         draggingRef.current = true;
         startRotRef.current = { ...rotationRef.current };
         startPosRef.current = { x: evt.clientX, y: evt.clientY };
+        rootRef.current?.classList.add('is-dragging');
       },
       onDrag: ({ event, last, velocity: velArr = [0, 0], direction: dirArr = [0, 0] }) => {
         if (openingRef.current || !draggingRef.current || !startPosRef.current) return;
@@ -298,10 +300,17 @@ export default function DomeGallery({
         const nextX = clamp(startRotRef.current.x - dy / dragSensitivity, -maxVerticalRotationDeg, maxVerticalRotationDeg);
         const nextY = startRotRef.current.y + dx / dragSensitivity;
         rotationRef.current = { x: nextX, y: nextY };
-        applyTransform(nextX, nextY);
+        
+        if (!dragRAF.current) {
+          dragRAF.current = requestAnimationFrame(() => {
+            applyTransform(rotationRef.current.x, rotationRef.current.y);
+            dragRAF.current = null;
+          });
+        }
 
         if (last) {
           draggingRef.current = false;
+          rootRef.current?.classList.remove('is-dragging');
           if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
             const potential = (evt.target as Element).closest('.item__image') as HTMLElement;
             if (potential) openItem(potential);
@@ -356,6 +365,8 @@ export default function DomeGallery({
       transition: opacity 0.5s ease; z-index: 9998;
     }
     .sphere-root[data-enlarging="true"] .scrim { opacity: 1; pointer-events: all; }
+    .is-dragging .item__image { pointer-events: none; }
+    .is-dragging .sphere { will-change: transform; }
   `;
 
   return (

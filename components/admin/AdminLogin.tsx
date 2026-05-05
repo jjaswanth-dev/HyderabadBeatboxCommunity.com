@@ -30,7 +30,7 @@ export default function AdminLogin() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center flex items-center justify-center md:justify-end p-8 md:pr-96"
+      className="min-h-screen bg-cover bg-center flex items-center justify-center md:justify-end p-8 md:pr-72"
       style={{
         backgroundImage:
           "url('https://ik.imagekit.io/qci75z79t/BBx%20Home%20Pics/Copilot_20260505_180001.png')",

@@ -12,9 +12,6 @@ export const metadata: Metadata = {
   title: "Hyderabad Beatbox Community",
   description: "Uniting rhythms, creating beats, building community. The official website of the Hyderabad Beatbox Community.",
   keywords: ["beatbox", "hyderabad", "community", "music", "beatboxing"],
-  icons: {
-    icon: "/icon.png",
-  },
   openGraph: {
     title: "Hyderabad Beatbox Community",
     description: "Uniting rhythms, creating beats, building community",

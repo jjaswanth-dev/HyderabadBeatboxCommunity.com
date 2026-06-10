@@ -62,7 +62,7 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
   };
 
   const handleNativeShare = async () => {
-    if (navigator.share) {
+    if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await navigator.share({
           title: blog.title,
@@ -180,7 +180,7 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
           <h3 className="text-xl font-bold mb-4 text-white">Share this article</h3>
           <div className="flex flex-wrap items-center gap-4">
             {/* Native Share Button (only if supported) */}
-            {typeof navigator !== "undefined" && navigator.share && (
+            {typeof navigator !== "undefined" && "share" in navigator && (
               <button
                 type="button"
                 onClick={handleNativeShare}

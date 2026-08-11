@@ -34,3 +34,13 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## ⏳ Wildcard Feature Deadlines & Reversions
+
+Please note the following critical schedule for reverting wildcard adjustments:
+
+1. **September 27th Reversion**:
+   - Revert changes made to `components/ImageCarousel.tsx` (such as restoring original slides/local image declarations: `/home1.webp`, `/home2.webp`, and resetting margins/states if needed).
+2. **September 28th Reversion**:
+   - Revert the temporary layout shift in `components/ImageCarousel.tsx` (restoring the title, paragraph, and "Submit Wildcards Now!" button back to their centered positions and larger font sizes).
+

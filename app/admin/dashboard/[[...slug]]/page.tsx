@@ -112,9 +112,8 @@ export default function AdminDashboardPage() {
               <Link href={item.href} key={item.href}>
                 <motion.div
                   variants={itemVariants}
-                  className={`glass-effect p-6 rounded-xl text-center hover:bg-white/5 transition-all cursor-pointer shadow-lg border border-white/10 ${
-                    pathname === item.href ? "border-blue-500 bg-blue-500/10" : ""
-                  }`}
+                  className={`glass-effect p-6 rounded-xl text-center hover:bg-white/5 transition-all cursor-pointer shadow-lg border border-white/10 ${pathname === item.href ? "border-blue-500 bg-blue-500/10" : ""
+                    }`}
                 >
                   <h2 className="text-xl text-white font-semibold">{item.label}</h2>
                 </motion.div>

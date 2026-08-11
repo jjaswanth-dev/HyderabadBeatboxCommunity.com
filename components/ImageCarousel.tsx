@@ -6,7 +6,8 @@ import Image from "next/image";
 
 export default function ImageCarousel() {
   const [currentImage, setCurrentImage] = useState(0);
-  const [images, setImages] = useState<string[]>(["/home1.webp", "/home2.webp"]);
+  // const [images, setImages] = useState<string[]>(["/home1.webp", "/home2.webp"]); # need to add again after sep 27th
+  const [images, setImages] = useState<string[]>([]);
   const [isCarouselVisible, setIsCarouselVisible] = useState(false);
   const [isWildcardActive, setIsWildcardActive] = useState(false);
 
@@ -34,7 +35,8 @@ export default function ImageCarousel() {
         if (data && data.length > 0) {
           // Keep local images first for performance, then append DB images
           const dbImages = data.map((item: any) => item.image);
-          setImages(["/home1.webp", "/home2.webp", ...dbImages]);
+          // setImages(["/home1.webp", "/home2.webp", ...dbImages]);
+          setImages([...dbImages]);
         }
       } catch (error) {
         console.error("Error fetching carousel images:", error);
@@ -71,20 +73,20 @@ export default function ImageCarousel() {
               alt={`Slide ${index + 1}`}
               fill
               priority={index === 0}
-              className="object-cover"
+              className="object-cover scale-100"
               sizes="100vw"
             />
             <div className="hero-gradient absolute inset-0" />
           </div>
         ))}
       </div>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center p-8 max-w-5xl mt-28 md:mt-36">
-          <LuMicVocal className="w-16 h-16 mx-auto mb-6 text-white animate-pulse" />
-          <h1 className="text-4xl md:text-8xl font-bold mb-8 text-gradient tracking-tight">
+      <div className="absolute inset-0 flex items-start justify-start p-6 md:p-16 z-10">
+        <div className="text-left max-w-xl mt-24 md:mt-28 space-y-4">
+          <LuMicVocal className="w-10 h-10 text-white animate-pulse" />
+          <h1 className="text-2xl md:text-4xl font-bold text-gradient tracking-tight">
             Hyderabad Beatbox Community
           </h1>
-          <p className="text-xl md:text-xl text-white/60 max-w-2xl mx-auto">
+          <p className="text-sm md:text-base text-white/60">
             Uniting rhythms, creating beats, building community
           </p>
           {isWildcardActive && (
@@ -92,7 +94,7 @@ export default function ImageCarousel() {
               onClick={() => {
                 window.location.href = "/wildcard";
               }}
-              className="mt-8 px-6 sm:px-8 py-3.5 sm:py-4 text-white rounded-full font-bold text-xs sm:text-sm md:text-base hover:scale-105 transition-all duration-300 cursor-pointer inline-block font-sans max-w-full btn-wildcard-premium"
+              className="mt-2 px-5 py-3 text-white rounded-md font-bold text-xs sm:text-sm hover:scale-105 transition-all duration-300 cursor-pointer inline-block font-sans btn-wildcard-premium"
             >
               Submit Wildcards Now!
             </button>

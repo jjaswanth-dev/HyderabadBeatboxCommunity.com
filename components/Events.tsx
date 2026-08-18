@@ -87,15 +87,7 @@ function EventModal({ event, onClose }: { event: EventType; onClose: () => void 
             className="relative w-full max-w-2xl rounded-2xl glass-effect p-6 md:p-8 shadow-2xl border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={onClose}
-              className="absolute right-4 top-4 text-white/60 hover:text-white p-2"
-              aria-label="Close modal"
-            >
-              <X size={24} />
-            </button>
-
-            {event.image && (
+            {event.image ? (
               <div className="relative w-full h-64 mb-6">
                 <Image
                   src={event.image}
@@ -104,7 +96,22 @@ function EventModal({ event, onClose }: { event: EventType; onClose: () => void 
                   className="object-cover rounded"
                   sizes="(max-width: 768px) 100vw, 640px"
                 />
+                <button
+                  onClick={onClose}
+                  className="absolute right-3 top-3 text-white/85 hover:text-white bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-2 transition-all z-50 shadow-lg"
+                  aria-label="Close modal"
+                >
+                  <X size={20} />
+                </button>
               </div>
+            ) : (
+              <button
+                onClick={onClose}
+                className="absolute right-4 top-4 text-white/60 hover:text-white p-2 z-50"
+                aria-label="Close modal"
+              >
+                <X size={24} />
+              </button>
             )}
 
             <div className="flex flex-col md:flex-row md:items-start gap-6">

@@ -78,3 +78,9 @@ In [app/globals.css](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%
 - `@keyframes gradient-shift` & `@keyframes btn-shimmer`
 - `.btn-wildcard-premium` (including hover and after selectors)
 - `@keyframes button-glow-pulse` & `.animate-button-glow`
+
+---
+
+> [!NOTE]
+> For the comprehensive project history, architecture, and documentation across all features (Blog System, Dome Gallery, Event Details & Social Share, Bento About Section), refer to [PROJECT_CONTEXT.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/PROJECT_CONTEXT.md).
+

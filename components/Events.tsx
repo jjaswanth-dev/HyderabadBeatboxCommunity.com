@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, Clock, X } from "lucide-react";
+import { Calendar, Clock, X, Share2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Section from "./Section";
 import LoadingSpinner from "./LoadingSpinner";
 import Image from "next/image";
+import EventShareModal from "./EventShareModal";
 
 interface EventType {
   _id: string;
@@ -61,6 +62,8 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
 }
 
 function EventModal({ event, onClose }: { event: EventType; onClose: () => void }) {
+  const [showShareModal, setShowShareModal] = useState(false);
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -87,31 +90,37 @@ function EventModal({ event, onClose }: { event: EventType; onClose: () => void 
             className="relative w-full max-w-2xl rounded-2xl glass-effect p-6 md:p-8 shadow-2xl border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
-            {event.image ? (
-              <div className="relative w-full h-64 mb-6">
-                <Image
-                  src={event.image}
-                  alt="Event"
-                  fill
-                  className="object-cover rounded"
-                  sizes="(max-width: 768px) 100vw, 640px"
-                />
-                <button
-                  onClick={onClose}
-                  className="absolute right-3 top-3 text-white/85 hover:text-white bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-2 transition-all z-50 shadow-lg"
-                  aria-label="Close modal"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-            ) : (
+            {/* Top Action Buttons: Share & Close */}
+            <div className="absolute right-3 top-3 flex items-center gap-2 z-50">
               <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                className="text-white/85 hover:text-white bg-black/50 hover:bg-[#0066FF]/60 backdrop-blur-sm rounded-full p-2 transition-all shadow-lg border border-white/10 flex items-center justify-center cursor-pointer hover:scale-105"
+                title="Share Event"
+                aria-label="Share event"
+              >
+                <Share2 size={18} />
+              </button>
+              <button
+                type="button"
                 onClick={onClose}
-                className="absolute right-4 top-4 text-white/60 hover:text-white p-2 z-50"
+                className="text-white/85 hover:text-white bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-2 transition-all shadow-lg border border-white/10 flex items-center justify-center cursor-pointer hover:scale-105"
                 aria-label="Close modal"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
+            </div>
+
+            {event.image && (
+              <div className="relative w-full h-64 mb-6 rounded overflow-hidden">
+                <Image
+                  src={event.image}
+                  alt={event.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 640px"
+                />
+              </div>
             )}
 
             <div className="flex flex-col md:flex-row md:items-start gap-6">
@@ -152,24 +161,42 @@ function EventModal({ event, onClose }: { event: EventType; onClose: () => void 
                       </p>
                     </div>
                   )}
-                  {event.ticketLink && (
-                    <div className="mt-6">
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    {event.ticketLink && (
                       <a
                         href={event.ticketLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                        className="inline-block bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
                       >
                         Book Tickets
                       </a>
-                    </div>
-                  )}
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowShareModal(true)}
+                      className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 text-white px-5 py-2.5 rounded-lg font-semibold transition-all shadow-md cursor-pointer hover:scale-105"
+                    >
+                      <Share2 size={16} />
+                      <span>Share Event</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </motion.div>
         </div>
       </div>
+
+      {/* Share Modal Popup */}
+      <AnimatePresence>
+        {showShareModal && (
+          <EventShareModal
+            event={event}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

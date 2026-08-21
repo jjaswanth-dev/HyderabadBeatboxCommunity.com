@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '0');
     
-    let query = Event.find();
+    let query = Event.find().sort({ createdAt: -1 });
     if (limit > 0) {
       query = query.limit(limit);
     }

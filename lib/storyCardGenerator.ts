@@ -299,38 +299,13 @@ export async function generateStoryCardBlob(event: EventStoryData): Promise<Blob
     ctx.restore();
   }
 
-  // 7. BOTTOM ACTION BANNER (Spotify / Ticket Style Pill)
-  const botY = 1680;
-  const botW = 760;
-  const botH = 86;
-  const botX = (1080 - botW) / 2;
-
-  ctx.save();
-  drawRoundedRect(botX, botY, botW, botH, 43);
-  
-  const botGrad = ctx.createLinearGradient(botX, botY, botX + botW, botY + botH);
-  botGrad.addColorStop(0, "#0066FF");
-  botGrad.addColorStop(1, "#0052CC");
-  ctx.fillStyle = botGrad;
-  ctx.shadowColor = "rgba(0, 102, 255, 0.4)";
-  ctx.shadowBlur = 24;
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  ctx.font = "bold 24px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "#FFFFFF";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("🎟️ GET TICKETS & PASSES ON HYDBBX", 540, botY + 43);
-  ctx.restore();
-
-  // 8. Minimalist Watermark
+  // 7. Minimalist Watermark Footer
   ctx.save();
   ctx.font = "500 18px 'Lexend', sans-serif";
   ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
   ctx.textAlign = "center";
   ctx.letterSpacing = "2px";
-  ctx.fillText("www.hyderabadbeatboxcommunity.in", 540, 1820);
+  ctx.fillText("www.hyderabadbeatboxcommunity.in", 540, 1800);
   ctx.restore();
 
   return new Promise((resolve) => {

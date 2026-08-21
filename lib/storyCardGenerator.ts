@@ -2,6 +2,7 @@ export interface EventStoryData {
   title: string;
   date: string;
   location?: string;
+  description?: string;
   image?: string;
   shareUrl: string;
 }
@@ -37,8 +38,37 @@ function loadImageSafe(src: string): Promise<HTMLImageElement | null> {
 }
 
 /**
- * Generates an ultra-premium, minimalist, professional 9:16 (1080x1920) Story Graphic.
- * Clean dark aesthetic matching the official HBX brand design.
+ * Helper to wrap text into lines respecting max pixel width
+ */
+function getWrappedLines(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+): string[] {
+  const words = text.trim().split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  return lines;
+}
+
+/**
+ * Generates an ultra-premium, responsive 9:16 (1080x1920) Story Graphic.
+ * Spotify-style top link pill, clean 1:1 artwork, wrapped title, date, venue, description, and ticket action.
  */
 export async function generateStoryCardBlob(event: EventStoryData): Promise<Blob> {
   const canvas = document.createElement("canvas");
@@ -73,55 +103,74 @@ export async function generateStoryCardBlob(event: EventStoryData): Promise<Blob
     ctx.closePath();
   };
 
-  // 1. Minimalist Deep Obsidian Background
-  ctx.fillStyle = "#070707";
+  // 1. Sleek Midnight Gradient Background
+  const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1920);
+  bgGrad.addColorStop(0, "#05070f");
+  bgGrad.addColorStop(0.35, "#0a0f1d");
+  bgGrad.addColorStop(0.7, "#060914");
+  bgGrad.addColorStop(1, "#020308");
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, 1080, 1920);
 
-  // Subtle ambient radial glow behind poster
-  const glow = ctx.createRadialGradient(540, 800, 50, 540, 800, 650);
-  glow.addColorStop(0, "rgba(0, 102, 255, 0.18)");
-  glow.addColorStop(0.6, "rgba(0, 102, 255, 0.03)");
-  glow.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = glow;
+  // Subtle Ambient Glows
+  const glow1 = ctx.createRadialGradient(540, 650, 40, 540, 650, 600);
+  glow1.addColorStop(0, "rgba(0, 102, 255, 0.22)");
+  glow1.addColorStop(0.6, "rgba(0, 102, 255, 0.04)");
+  glow1.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = glow1;
   ctx.fillRect(0, 0, 1080, 1920);
 
-  // 2. Top Header Brand Pill: "HYDERABAD BEATBOX COMMUNITY"
-  const topY = 180;
+  // 2. SPOTIFY-STYLE TOP LINK PILL (Y = 120)
+  const pillW = 760;
+  const pillH = 72;
+  const pillX = (1080 - pillW) / 2;
+  const pillY = 130;
+
   ctx.save();
-  ctx.font = "600 24px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-  ctx.textAlign = "center";
-  ctx.letterSpacing = "4px";
-  ctx.fillText("HYDERABAD BEATBOX COMMUNITY", 540, topY);
-
-  // Subtle line divider
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(380, topY + 28);
-  ctx.lineTo(700, topY + 28);
+  drawRoundedRect(pillX, pillY, pillW, pillH, 36);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.lineWidth = 1.5;
   ctx.stroke();
+
+  // Link Icon / Dot
+  ctx.beginPath();
+  ctx.arc(pillX + 42, pillY + 36, 7, 0, Math.PI * 2);
+  ctx.fillStyle = "#0066FF";
+  ctx.shadowColor = "#0066FF";
+  ctx.shadowBlur = 10;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Domain text
+  ctx.font = "bold 24px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#E0F2FE";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🔗 www.hyderabadbeatboxcommunity.in", 540, pillY + 36);
   ctx.restore();
 
-  // 3. Central Poster Artwork Frame
-  const posterX = 140;
-  const posterY = 270;
-  const posterW = 800;
-  const posterH = 880;
+  // 3. Central Poster Artwork (1:1 Spotify Album Art Style)
+  const maxContentW = 800;
+  const posterW = 760;
+  const posterH = 760;
+  const posterX = (1080 - posterW) / 2;
+  const posterY = 240;
 
-  // Outer subtle glow & shadow
+  // Drop shadow
   ctx.save();
-  drawRoundedRect(posterX, posterY, posterW, posterH, 28);
-  ctx.shadowColor = "rgba(0, 102, 255, 0.25)";
-  ctx.shadowBlur = 40;
-  ctx.shadowOffsetY = 16;
+  drawRoundedRect(posterX, posterY, posterW, posterH, 32);
+  ctx.shadowColor = "rgba(0, 102, 255, 0.35)";
+  ctx.shadowBlur = 48;
+  ctx.shadowOffsetY = 20;
   ctx.fillStyle = "#111111";
   ctx.fill();
   ctx.restore();
 
-  // Draw Poster Image
+  // Poster image clip
   ctx.save();
-  drawRoundedRect(posterX, posterY, posterW, posterH, 28);
+  drawRoundedRect(posterX, posterY, posterW, posterH, 32);
   ctx.clip();
 
   if (posterImg) {
@@ -142,91 +191,146 @@ export async function generateStoryCardBlob(event: EventStoryData): Promise<Blob
 
     ctx.drawImage(posterImg, sx, sy, sw, sh, posterX, posterY, posterW, posterH);
 
-    // Subtle dark gradient at bottom of poster
+    // Bottom soft shade
     const posterGrad = ctx.createLinearGradient(0, posterY + posterH - 180, 0, posterY + posterH);
     posterGrad.addColorStop(0, "rgba(0,0,0,0)");
-    posterGrad.addColorStop(1, "rgba(0,0,0,0.6)");
+    posterGrad.addColorStop(1, "rgba(0,0,0,0.65)");
     ctx.fillStyle = posterGrad;
     ctx.fillRect(posterX, posterY, posterW, posterH);
   } else {
     const placeholderGrad = ctx.createLinearGradient(posterX, posterY, posterX, posterY + posterH);
-    placeholderGrad.addColorStop(0, "#161616");
-    placeholderGrad.addColorStop(1, "#0A0A0A");
+    placeholderGrad.addColorStop(0, "#161c2e");
+    placeholderGrad.addColorStop(1, "#0a0e1a");
     ctx.fillStyle = placeholderGrad;
     ctx.fillRect(posterX, posterY, posterW, posterH);
 
-    ctx.font = "bold 72px 'Lexend', sans-serif";
+    ctx.font = "bold 64px 'Lexend', sans-serif";
     ctx.fillStyle = "#0066FF";
     ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.fillText("HYD BEATBOX", 540, posterY + posterH / 2);
   }
   ctx.restore();
 
-  // Minimal glass border for poster
+  // Border stroke
   ctx.save();
-  drawRoundedRect(posterX, posterY, posterW, posterH, 28);
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-  ctx.lineWidth = 2;
+  drawRoundedRect(posterX, posterY, posterW, posterH, 32);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
+  ctx.lineWidth = 2.5;
   ctx.stroke();
   ctx.restore();
 
-  // 4. Clean Minimalist Event Title
+  // 4. DYNAMIC EVENT TITLE (Auto-scaled and multi-line wrapped)
+  let currentY = 1045;
   ctx.save();
-  const maxTitleWidth = 840;
-  let titleFontSize = 48;
-  if (event.title.length > 40) titleFontSize = 38;
-  else if (event.title.length > 25) titleFontSize = 44;
+  let titleFontSize = 42;
+  if (event.title.length > 50) titleFontSize = 34;
+  else if (event.title.length > 35) titleFontSize = 38;
 
   ctx.font = `800 ${titleFontSize}px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif`;
   ctx.fillStyle = "#FFFFFF";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
-  const words = event.title.split(" ");
-  let line = "";
-  let currentY = 1210;
-  let linesRendered = 0;
+  const titleLines = getWrappedLines(ctx, event.title, maxContentW);
+  const maxTitleLines = Math.min(titleLines.length, 2);
 
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + " ";
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxTitleWidth && n > 0) {
-      ctx.fillText(line.trim(), 540, currentY);
-      line = words[n] + " ";
-      currentY += titleFontSize + 14;
-      linesRendered++;
-      if (linesRendered >= 2 && n < words.length - 1) {
-        line = line + "...";
-        break;
-      }
-    } else {
-      line = testLine;
+  for (let i = 0; i < maxTitleLines; i++) {
+    let lineText = titleLines[i];
+    if (i === maxTitleLines - 1 && titleLines.length > maxTitleLines) {
+      lineText += "...";
+    }
+    ctx.fillText(lineText, 540, currentY);
+    currentY += titleFontSize + 12;
+  }
+  ctx.restore();
+
+  currentY += 8;
+
+  // 5. DATE & VENUE BADGE (Wrapped and formatted cleanly)
+  ctx.save();
+  ctx.font = "bold 24px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#60A5FA";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  // Date Line
+  const dateLine = `📅  ${event.date}`;
+  const wrappedDateLines = getWrappedLines(ctx, dateLine, maxContentW);
+  for (const line of wrappedDateLines.slice(0, 1)) {
+    ctx.fillText(line, 540, currentY);
+    currentY += 34;
+  }
+
+  // Location Line (if available)
+  if (event.location) {
+    ctx.font = "600 22px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+    const locLine = `📍  ${event.location}`;
+    const wrappedLocLines = getWrappedLines(ctx, locLine, maxContentW);
+    for (const line of wrappedLocLines.slice(0, 2)) {
+      ctx.fillText(line, 540, currentY);
+      currentY += 30;
     }
   }
-  ctx.fillText(line.trim(), 540, currentY);
   ctx.restore();
 
-  // 5. Minimalist Date & Venue Metadata Line
-  const metaY = currentY + titleFontSize + 26;
+  currentY += 10;
+
+  // 6. EVENT DESCRIPTION SNIPPET (Wrapped gracefully)
+  if (event.description) {
+    ctx.save();
+    ctx.font = "400 20px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    const descLines = getWrappedLines(ctx, event.description, maxContentW - 40);
+    const maxDescLines = Math.min(descLines.length, 3);
+
+    for (let i = 0; i < maxDescLines; i++) {
+      let lineText = descLines[i];
+      if (i === maxDescLines - 1 && descLines.length > maxDescLines) {
+        lineText += "...";
+      }
+      ctx.fillText(lineText, 540, currentY);
+      currentY += 28;
+    }
+    ctx.restore();
+  }
+
+  // 7. BOTTOM ACTION BANNER (Spotify / Ticket Style Pill)
+  const botY = 1680;
+  const botW = 760;
+  const botH = 86;
+  const botX = (1080 - botW) / 2;
+
   ctx.save();
-  ctx.font = "500 26px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "#0066FF";
+  drawRoundedRect(botX, botY, botW, botH, 43);
+  
+  const botGrad = ctx.createLinearGradient(botX, botY, botX + botW, botY + botH);
+  botGrad.addColorStop(0, "#0066FF");
+  botGrad.addColorStop(1, "#0052CC");
+  ctx.fillStyle = botGrad;
+  ctx.shadowColor = "rgba(0, 102, 255, 0.4)";
+  ctx.shadowBlur = 24;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.font = "bold 24px 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#FFFFFF";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-
-  const metaText = event.location
-    ? `${event.date.toUpperCase()}  •  ${event.location.toUpperCase()}`
-    : event.date.toUpperCase();
-  ctx.fillText(metaText, 540, metaY);
+  ctx.fillText("🎟️ GET TICKETS & PASSES ON HYDBBX", 540, botY + 43);
   ctx.restore();
 
-  // 6. Minimal Footer Brand Tag
+  // 8. Minimalist Watermark
   ctx.save();
-  ctx.font = "400 20px 'Lexend', sans-serif";
+  ctx.font = "500 18px 'Lexend', sans-serif";
   ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
   ctx.textAlign = "center";
   ctx.letterSpacing = "2px";
-  ctx.fillText("hydbbx.com", 540, 1720);
+  ctx.fillText("www.hyderabadbeatboxcommunity.in", 540, 1820);
   ctx.restore();
 
   return new Promise((resolve) => {

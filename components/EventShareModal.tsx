@@ -86,6 +86,7 @@ export default function EventShareModal({
         title: event.title,
         date: event.date,
         location: event.location,
+        description: event.description,
         image: event.image,
         shareUrl
       });
@@ -147,6 +148,7 @@ export default function EventShareModal({
         title: event.title,
         date: event.date,
         location: event.location,
+        description: event.description,
         image: event.image,
         shareUrl
       });
@@ -217,7 +219,7 @@ export default function EventShareModal({
             </div>
             <div className="min-w-0">
               <h3 className="text-base sm:text-lg font-bold text-white leading-none truncate">Share Event</h3>
-              <p className="text-xs text-white/50 mt-1 truncate">Minimalist Event Card & Story</p>
+              <p className="text-xs text-white/50 mt-1 truncate">Spotify-Style Story & Event Pass</p>
             </div>
           </div>
           <button
@@ -312,11 +314,17 @@ export default function EventShareModal({
                     </div>
                   )}
 
+                  {event.description && (
+                    <p className="text-[11px] text-white/60 mt-1 line-clamp-2 leading-tight">
+                      {event.description}
+                    </p>
+                  )}
+
                   {/* Clickable Link Indicator Bar */}
                   <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-white/60">
                     <span className="flex items-center gap-1 truncate font-mono text-[#0066FF]">
                       <LinkIcon className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{shareUrl.replace(/^https?:\/\//, "")}</span>
+                      <span className="truncate">www.hyderabadbeatboxcommunity.in</span>
                     </span>
                     <span className="flex-shrink-0 flex items-center gap-0.5 text-white/40 group-hover:text-white font-medium pl-1">
                       Visit ↗

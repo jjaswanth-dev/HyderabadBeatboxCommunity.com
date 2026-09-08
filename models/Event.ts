@@ -26,6 +26,10 @@ const eventSchema = new mongoose.Schema({
   ticketLink: {
     type: String,
     default: ''
+  },
+  isHidden: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

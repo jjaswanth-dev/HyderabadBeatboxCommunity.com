@@ -9,12 +9,18 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '0');
-    
-    let query = Event.find().sort({ createdAt: -1 });
+    const includeHidden = searchParams.get('all') === 'true';
+
+    let filter: any = {};
+    if (!includeHidden) {
+      filter = { isHidden: { $ne: true } };
+    }
+
+    let query = Event.find(filter).sort({ createdAt: -1 });
     if (limit > 0) {
       query = query.limit(limit);
     }
-    
+
     const events = await query;
     return NextResponse.json(events);
   } catch (error: any) {

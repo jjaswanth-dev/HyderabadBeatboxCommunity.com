@@ -28,6 +28,6 @@ export const DEFAULT_25_BEATBOXERS: BeatboxerItem[] = [
   { id: 21, name: "Mohit", status: "Confirmed" },
   { id: 22, name: "Arth", status: "Confirmed" },
   { id: 23, name: "Ken-z", status: "Confirmed" },
-  { id: 24, name: "Patriot", status: "Confirmed" },
+  { id: 24, name: "Pracheta", status: "Confirmed" },
   { id: 25, name: "Marvel", status: "Confirmed" },
 ];

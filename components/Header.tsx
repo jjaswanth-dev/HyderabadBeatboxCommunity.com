@@ -9,7 +9,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWildcardActive, setIsWildcardActive] = useState(false);
-  const [isDraw24Active, setIsDraw24Active] = useState(false);
+  const [isDraw24Active, setIsDraw24Active] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {

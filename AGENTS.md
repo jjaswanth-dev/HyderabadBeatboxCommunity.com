@@ -92,6 +92,24 @@ In [app/globals.css](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%
 
 ---
 
+# Project Tracker: Championship Ticket Button Feature
+
+## 1. Feature Summary
+- **Component File:** [components/TicketButton.tsx](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/components/TicketButton.tsx) — A ticket-shaped interactive button with dual fan-out hover animation, punch notches, barcode stub, and HBX icon badge (`/icon.png`).
+- **Color Palette:** Styled in Championship theme: Electric Neon Yellow (`#EAFF00`), Vibrant Violet (`#581C87` / `purple-950`), and Obsidian dark glass.
+- **Home Page Hero Placement:** Embedded in [components/ImageCarousel.tsx](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/components/ImageCarousel.tsx) redirecting directly to the ticket registration Google Form.
+
+## 2. Maintenance & Removal/Re-enabling Guide
+> [!IMPORTANT]
+> Retain the `components/TicketButton.tsx` file in the codebase for future events.
+
+- **To temporarily hide/remove from front page:**
+  In `components/ImageCarousel.tsx`, comment out or remove `<TicketButton />` and its import.
+- **To re-enable or update in future:**
+  Import `TicketButton` into `components/ImageCarousel.tsx`, place `<TicketButton />` in the hero CTA area, and supply or update the `formUrl` prop or `DEFAULT_TICKET_FORM_URL` constant.
+
+---
+
 > [!NOTE]
 > For the comprehensive project history, architecture, and documentation across all features (Blog System, Dome Gallery, Event Details & Social Share, Bento About Section), refer to [PROJECT_CONTEXT.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/PROJECT_CONTEXT.md).
 

@@ -10,6 +10,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWildcardActive, setIsWildcardActive] = useState(false);
   const [isDraw24Active, setIsDraw24Active] = useState(true);
+  const [isChampionshipActive, setIsChampionshipActive] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,9 +23,10 @@ export default function Header() {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const [wildcardRes, draw24Res] = await Promise.allSettled([
+        const [wildcardRes, draw24Res, champRes] = await Promise.allSettled([
           fetch("/api/wildcard"),
           fetch("/api/draw-24"),
+          fetch("/api/championship/public"),
         ]);
         
         if (wildcardRes.status === "fulfilled") {
@@ -36,6 +38,11 @@ export default function Header() {
           const dData = await draw24Res.value.json();
           if (dData && dData.isActive) setIsDraw24Active(true);
         }
+
+        if (champRes.status === "fulfilled") {
+          const cData = await champRes.value.json();
+          if (cData && cData.isActive) setIsChampionshipActive(true);
+        }
       } catch (err) {
         console.error("Failed to check feature statuses", err);
       }
@@ -46,6 +53,7 @@ export default function Header() {
   const sections = [
     "home",
     "about",
+    ...(isChampionshipActive ? ["championship"] : []),
     ...(isDraw24Active ? ["draw-24"] : []),
     ...(isWildcardActive ? ["wildcard"] : []),
     "events",
@@ -56,6 +64,13 @@ export default function Header() {
   ];
 
   const scrollToSection = (id: string) => {
+    if (id === "championship") {
+      window.location.href = "/championship";
+      setTimeout(() => {
+        setIsMobileMenuOpen(false);
+      }, 300);
+      return;
+    }
     if (id === "draw-24") {
       window.location.href = "/draw-24";
       setTimeout(() => {
@@ -108,9 +123,21 @@ export default function Header() {
             <button
               key={section}
               onClick={() => scrollToSection(section)}
-              className={`nav-link ${section === "draw-24" ? "animate-pulse-glow font-bold text-sky-400" : section === "wildcard" ? "animate-pulse-glow font-bold text-emerald-400" : ""}`}
+              className={`nav-link ${
+                section === "championship"
+                  ? "animate-pulse-glow font-black text-emerald-400"
+                  : section === "draw-24"
+                  ? "animate-pulse-glow font-bold text-sky-400"
+                  : section === "wildcard"
+                  ? "animate-pulse-glow font-bold text-emerald-400"
+                  : ""
+              }`}
             >
-              {section === "draw-24" ? "WILDCARD WINNERS" : section.toUpperCase()}
+              {section === "championship"
+                ? "LIVE CHAMPIONSHIP"
+                : section === "draw-24"
+                ? "WILDCARD WINNERS"
+                : section.toUpperCase()}
             </button>
           ))}
         </div>
@@ -136,10 +163,21 @@ export default function Header() {
                 <button
                   key={section}
                   onClick={() => scrollToSection(section)}
-                  className={`block w-full text-left px-4 py-2 nav-link ${section === "draw-24" ? "animate-pulse-glow font-bold text-sky-400" : section === "wildcard" ? "animate-pulse-glow font-bold text-emerald-400" : ""
-                    }`}
+                  className={`block w-full text-left px-4 py-2 nav-link ${
+                    section === "championship"
+                      ? "animate-pulse-glow font-black text-emerald-400"
+                      : section === "draw-24"
+                      ? "animate-pulse-glow font-bold text-sky-400"
+                      : section === "wildcard"
+                      ? "animate-pulse-glow font-bold text-emerald-400"
+                      : ""
+                  }`}
                 >
-                  {section === "draw-24" ? "WILDCARD WINNERS" : section.toUpperCase()}
+                  {section === "championship"
+                    ? "LIVE CHAMPIONSHIP"
+                    : section === "draw-24"
+                    ? "WILDCARD WINNERS"
+                    : section.toUpperCase()}
                 </button>
               ))}
             </div>

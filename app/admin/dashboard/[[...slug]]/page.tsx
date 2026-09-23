@@ -29,6 +29,9 @@ const WildcardManager = dynamic(() => import("@/components/admin/WildcardManager
 const Draw24Manager = dynamic(() => import("@/components/admin/Draw24Manager"), {
   loading: () => <DashboardSkeleton />,
 });
+const ChampionshipManager = dynamic(() => import("@/components/admin/ChampionshipManager"), {
+  loading: () => <DashboardSkeleton />,
+});
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -48,6 +51,7 @@ export default function AdminDashboardPage() {
     if (pathname?.includes("/blogs")) return <BlogManager />;
     if (pathname?.includes("/wildcard")) return <WildcardManager />;
     if (pathname?.includes("/draw-24")) return <Draw24Manager />;
+    if (pathname?.includes("/championship")) return <ChampionshipManager />;
     return null;
   };
 
@@ -76,6 +80,7 @@ export default function AdminDashboardPage() {
     { href: "/admin/dashboard/blogs", label: "Manage Blogs" },
     { href: "/admin/dashboard/wildcard", label: "Manage Wildcard" },
     { href: "/admin/dashboard/draw-24", label: "Manage Winners (Draw 24)" },
+    { href: "/admin/dashboard/championship", label: "Manage Championship" },
   ];
 
   return (

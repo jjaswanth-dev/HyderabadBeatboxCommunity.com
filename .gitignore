@@ -40,8 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# project specific
+# project specific & documentation
 PROJECT_CONTEXT.md
+AGENTS.md
+CLAUDE.md
+CHAMPIONSHIP_OPERATIONS_GUIDE.md
 beatbox_community.galleries.json
 fix.md
 Dome gallery implemnation .md
+*.guide.md

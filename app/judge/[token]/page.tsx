@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Flame,
   ListOrdered,
+  Save,
 } from "lucide-react";
 
 interface Participant {
@@ -144,6 +145,7 @@ export default function JudgeScorecardPage() {
 
   const [scoresState, setScoresState] = useState<Record<string, number>>({});
   const [notesState, setNotesState] = useState<string>("");
+  const [isDirty, setIsDirty] = useState<boolean>(false);
 
   useEffect(() => {
     if (activeScoreRecord) {
@@ -153,6 +155,7 @@ export default function JudgeScorecardPage() {
       setScoresState({});
       setNotesState("");
     }
+    setIsDirty(false);
   }, [selectedParticipantIdx, activeCategory, currentScoresList]);
 
   const computeTotal = (scores: Record<string, number>) => {
@@ -164,22 +167,24 @@ export default function JudgeScorecardPage() {
     return Math.round(tot * 10) / 10;
   };
 
+  // Local state update ONLY — ZERO API requests fired on number clicks
   const handleScoreChange = (criteriaId: string, val: number) => {
-    const updated = { ...scoresState, [criteriaId]: val };
-    setScoresState(updated);
-    saveScoreToBackend(updated, notesState);
+    setScoresState((prev) => ({ ...prev, [criteriaId]: val }));
+    setIsDirty(true);
   };
 
   const handleNotesChange = (txt: string) => {
     setNotesState(txt);
+    setIsDirty(true);
   };
 
-  const handleNotesBlur = () => {
-    saveScoreToBackend(scoresState, notesState);
-  };
-
-  const saveScoreToBackend = async (scores: Record<string, number>, notes: string) => {
-    if (!currentParticipant || !token) return;
+  // Single Contender Save API Request
+  const saveScoreToBackend = async (
+    targetParticipantId: number,
+    scores: Record<string, number>,
+    notes: string
+  ) => {
+    if (!targetParticipantId || !token) return;
     setSaveStatus("saving");
     try {
       const res = await fetch("/api/championship/judge", {
@@ -189,13 +194,14 @@ export default function JudgeScorecardPage() {
           token,
           type: "elimination_score",
           category: activeCategory,
-          participantId: currentParticipant.id,
+          participantId: targetParticipantId,
           scores,
           notes,
         }),
       });
       if (res.ok) {
         setSaveStatus("saved");
+        setIsDirty(false);
         const resData = await res.json();
         if (resData.myScores) {
           if (activeCategory === "national") {
@@ -204,13 +210,36 @@ export default function JudgeScorecardPage() {
             setRegionalData((prev) => ({ ...prev, myScores: resData.myScores }));
           }
         }
-        setTimeout(() => setSaveStatus("idle"), 2500);
+        setTimeout(() => setSaveStatus("idle"), 3000);
       } else {
         setSaveStatus("error");
       }
     } catch {
       setSaveStatus("error");
     }
+  };
+
+  const handleSaveCurrent = async () => {
+    if (!currentParticipant) return;
+    await saveScoreToBackend(currentParticipant.id, scoresState, notesState);
+  };
+
+  const handleSelectParticipant = async (targetIdx: number) => {
+    if (targetIdx === selectedParticipantIdx) return;
+    // Auto-save unsaved scores for previous candidate before switching
+    if (isDirty && currentParticipant) {
+      await saveScoreToBackend(currentParticipant.id, scoresState, notesState);
+    }
+    setSelectedParticipantIdx(targetIdx);
+  };
+
+  const handleSwitchCategory = async (cat: "national" | "regional") => {
+    if (cat === activeCategory) return;
+    if (isDirty && currentParticipant) {
+      await saveScoreToBackend(currentParticipant.id, scoresState, notesState);
+    }
+    setActiveCategory(cat);
+    setSelectedParticipantIdx(0);
   };
 
   const handleVoteBattle = async (matchId: string, vote: "A" | "B") => {
@@ -348,10 +377,7 @@ export default function JudgeScorecardPage() {
           {/* Category Switcher */}
           <div className="bg-[#0e0e0e] p-1 rounded-xl border border-neutral-800 flex">
             <button
-              onClick={() => {
-                setActiveCategory("national");
-                setSelectedParticipantIdx(0);
-              }}
+              onClick={() => handleSwitchCategory("national")}
               className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                 activeCategory === "national"
                   ? "bg-[#FDE047] text-black shadow-sm font-black"
@@ -363,10 +389,7 @@ export default function JudgeScorecardPage() {
             </button>
 
             <button
-              onClick={() => {
-                setActiveCategory("regional");
-                setSelectedParticipantIdx(0);
-              }}
+              onClick={() => handleSwitchCategory("regional")}
               className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                 activeCategory === "regional"
                   ? "bg-[#FB7185] text-black shadow-sm font-black"
@@ -438,7 +461,7 @@ export default function JudgeScorecardPage() {
                   return (
                     <button
                       key={p.id}
-                      onClick={() => setSelectedParticipantIdx(idx)}
+                      onClick={() => handleSelectParticipant(idx)}
                       className={`flex-shrink-0 px-3 py-2 text-left rounded-xl transition-all border ${
                         isSelected
                           ? "bg-white text-black border-white shadow-md font-bold scale-105"
@@ -536,19 +559,61 @@ export default function JudgeScorecardPage() {
                   <textarea
                     value={notesState}
                     onChange={(e) => handleNotesChange(e.target.value)}
-                    onBlur={handleNotesBlur}
                     placeholder="Private notes for battle deliberations..."
                     rows={2}
                     className="w-full bg-[#111111] border border-neutral-700/80 p-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white rounded-xl transition-colors"
                   />
                 </div>
 
+                {/* Single Contender Save Action Button (1 API Request per Contender) */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveCurrent}
+                    disabled={saveStatus === "saving"}
+                    className={`w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm tracking-wide transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
+                      saveStatus === "saving"
+                        ? "bg-neutral-800 text-neutral-400 border border-neutral-700"
+                        : isDirty
+                        ? "bg-[#FDE047] text-black hover:bg-[#FACC15] ring-2 ring-[#FDE047]/50 shadow-[0_0_20px_rgba(253,224,71,0.25)] animate-pulse"
+                        : saveStatus === "saved"
+                        ? "bg-emerald-500 text-black font-extrabold"
+                        : "bg-[#1e1e1e] text-neutral-200 hover:bg-[#282828] border border-neutral-700/80"
+                    }`}
+                  >
+                    {saveStatus === "saving" ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-neutral-400 border-t-transparent animate-spin rounded-full" />
+                        <span>SAVING SCORES FOR {currentParticipant.name.toUpperCase()}...</span>
+                      </>
+                    ) : saveStatus === "saved" ? (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>SCORES SAVED ({currentTotal.toFixed(1)} / 60.0)</span>
+                      </>
+                    ) : isDirty ? (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>SAVE SCORE FOR {currentParticipant.name.toUpperCase()} ({currentTotal.toFixed(1)} / 60.0)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                        <span>SCORES SAVED ({currentTotal.toFixed(1)} / 60.0) • TAP TO RE-SAVE</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[10px] text-center text-neutral-500 mt-1.5 font-medium">
+                    Scores update locally instantly. Tapping save sends 1 single secure request. Auto-saves when you navigate.
+                  </p>
+                </div>
+
                 {/* Bottom Navigation */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-1">
                   <button
                     disabled={selectedParticipantIdx === 0}
-                    onClick={() => setSelectedParticipantIdx((p) => Math.max(0, p - 1))}
-                    className="flex-1 py-2.5 bg-[#1e1e1e] border border-neutral-700 hover:bg-neutral-800 disabled:opacity-30 text-xs font-bold text-white rounded-xl transition-all flex items-center justify-center gap-1.5"
+                    onClick={() => handleSelectParticipant(Math.max(0, selectedParticipantIdx - 1))}
+                    className="flex-1 py-2.5 bg-[#1e1e1e] border border-neutral-700 hover:bg-neutral-800 disabled:opacity-30 text-xs font-bold text-white rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95"
                   >
                     <ChevronLeft className="w-4 h-4" /> Previous
                   </button>
@@ -556,11 +621,11 @@ export default function JudgeScorecardPage() {
                   <button
                     disabled={selectedParticipantIdx === currentParticipants.length - 1}
                     onClick={() =>
-                      setSelectedParticipantIdx((p) =>
-                        Math.min(currentParticipants.length - 1, p + 1)
+                      handleSelectParticipant(
+                        Math.min(currentParticipants.length - 1, selectedParticipantIdx + 1)
                       )
                     }
-                    className="flex-1 py-2.5 bg-white text-black hover:bg-neutral-200 disabled:opacity-30 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md"
+                    className="flex-1 py-2.5 bg-white text-black hover:bg-neutral-200 disabled:opacity-30 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95"
                   >
                     Next Contender <ChevronRight className="w-4 h-4" />
                   </button>

@@ -36,7 +36,11 @@ export async function GET() {
       updatedAt: championship.updatedAt,
     };
 
-    return NextResponse.json(publicData);
+    return NextResponse.json(publicData, {
+      headers: {
+        "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30",
+      },
+    });
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message || "Failed to fetch championship data" },

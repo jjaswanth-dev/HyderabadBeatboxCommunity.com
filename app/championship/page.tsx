@@ -11,6 +11,7 @@ import {
   Crown,
   ChevronRight,
   ArrowRight,
+  RefreshCw,
 } from "lucide-react";
 import Header from "@/components/Header";
 
@@ -50,28 +51,52 @@ interface BattleMatch {
 export default function ChampionshipPublicPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<"national" | "regional">("national");
   const [activeView, setActiveView] = useState<"eliminations" | "battles">("eliminations");
   const [bracketRoundFilter, setBracketRoundFilter] = useState<"ALL" | "T16" | "QF" | "SF" | "FINAL">("ALL");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/championship/public");
+  const fetchData = async (isManual = false) => {
+    try {
+      if (isManual) setIsRefreshing(true);
+      const res = await fetch("/api/championship/public");
+      if (res.ok) {
         const json = await res.json();
         setData(json);
-      } catch (err) {
-        console.error("Failed to load championship data", err);
-      } finally {
-        setLoading(false);
+        setLastUpdated(new Date());
+      }
+    } catch (err) {
+      console.error("Failed to load championship data", err);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(false);
+
+    // Optimized 45-second auto-poll (only active when tab is visible to avoid burning requests)
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchData(false);
+      }
+    }, 45000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchData(false);
       }
     };
-    fetchData();
 
-    const interval = setInterval(fetchData, 15000);
-    return () => clearInterval(interval);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const currentCat = activeCategory === "national" ? data?.national : data?.regional;
@@ -136,9 +161,23 @@ export default function ChampionshipPublicPage() {
                 {data?.title || "HBC 2026 Championship"}
               </h1>
             </div>
-            <span className="text-xs text-neutral-400 font-medium">
-              Verified Judge Scoreboard & Battles
-            </span>
+            <div className="flex items-center gap-2.5">
+              {lastUpdated && (
+                <span className="text-[11px] text-neutral-400 font-mono hidden sm:inline-block">
+                  Synced: {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => fetchData(true)}
+                disabled={isRefreshing}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#222222] hover:bg-[#2e2e2e] border border-neutral-700/80 text-xs font-bold text-neutral-200 hover:text-white transition-all active:scale-95 disabled:opacity-50 shadow-sm"
+                title="Refresh latest scores and battles"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-[#FDE047]" : "text-neutral-400"}`} />
+                <span>{isRefreshing ? "Syncing..." : "Refresh"}</span>
+              </button>
+            </div>
           </div>
 
           {/* Navigation Controls: Clean Segmented Bar */}

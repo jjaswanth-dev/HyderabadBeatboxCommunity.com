@@ -383,6 +383,8 @@ export default function ChampionshipManager() {
   }, [rankedContenders, searchQuery]);
 
   const qualifierThreshold = activeCategory === "national" ? 16 : 8;
+  const judge1Name = judges.find((j) => j.id === "judge-1")?.name || "Nabinbe";
+  const judge2Name = judges.find((j) => j.id === "judge-2")?.name || "Kevin";
 
   // Split battles by stage
   const top16Battles = currentBattles.filter((b) => b.roundStage === "T16");
@@ -698,8 +700,8 @@ export default function ChampionshipManager() {
         <div className="space-y-4">
           <div className="bg-[#151515] border border-neutral-800 p-3.5 sm:p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-3">
             <div className="text-xs text-neutral-300 font-medium">
-              Formula: <span className="text-white font-bold">Judge 1 (/60.0)</span> +{" "}
-              <span className="text-white font-bold">Judge 2 (/60.0)</span> ={" "}
+              Formula: <span className="text-white font-bold">{judge1Name} (/60.0)</span> +{" "}
+              <span className="text-white font-bold">{judge2Name} (/60.0)</span> ={" "}
               <span className="bg-[#FDE047] text-black font-black px-1.5 py-0.5 rounded text-[11px]">
                 Total (/120.0)
               </span>
@@ -725,8 +727,8 @@ export default function ChampionshipManager() {
                     <th className="py-3 px-4 w-16">Rank</th>
                     <th className="py-3 px-4 w-28">Contender #</th>
                     <th className="py-3 px-4">Contender Name</th>
-                    <th className="py-3 px-4 text-center w-28 font-mono">Judge 1 (/60)</th>
-                    <th className="py-3 px-4 text-center w-28 font-mono">Judge 2 (/60)</th>
+                    <th className="py-3 px-4 text-center w-28 font-mono">{judge1Name} (/60)</th>
+                    <th className="py-3 px-4 text-center w-28 font-mono">{judge2Name} (/60)</th>
                     <th className="py-3 px-4 text-center w-36 font-mono text-white">Combined (/120)</th>
                     <th className="py-3 px-4 text-right w-44">Battle Status</th>
                   </tr>
@@ -1037,11 +1039,15 @@ function AdminPublicStyleBattleCard({
   isGrandFinal = false,
   isSmallFinal = false,
   onPickWinner,
+  judge1Name = "Nabinbe",
+  judge2Name = "Kevin",
 }: {
   battle: BattleMatch;
   isGrandFinal?: boolean;
   isSmallFinal?: boolean;
   onPickWinner: (id: number, name: string) => void;
+  judge1Name?: string;
+  judge2Name?: string;
 }) {
   const compA = battle.competitorA;
   const compB = battle.competitorB;
@@ -1214,10 +1220,10 @@ function AdminPublicStyleBattleCard({
       <div className="mt-3 pt-2.5 border-t border-neutral-700 flex flex-col gap-1.5 text-[11px]">
         <div className="flex items-center justify-between text-[10px] text-neutral-400">
           <span>
-            Judge 1: <strong className="text-white">{battle.judge1Vote ? `Comp ${battle.judge1Vote}` : "—"}</strong>
+            {judge1Name}: <strong className="text-white">{battle.judge1Vote ? `Comp ${battle.judge1Vote}` : "—"}</strong>
           </span>
           <span>
-            Judge 2: <strong className="text-white">{battle.judge2Vote ? `Comp ${battle.judge2Vote}` : "—"}</strong>
+            {judge2Name}: <strong className="text-white">{battle.judge2Vote ? `Comp ${battle.judge2Vote}` : "—"}</strong>
           </span>
         </div>
 

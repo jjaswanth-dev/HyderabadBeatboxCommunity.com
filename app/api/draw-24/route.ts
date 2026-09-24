@@ -17,7 +17,11 @@ export async function GET() {
         beatboxers: DEFAULT_25_BEATBOXERS,
       };
     }
-    return NextResponse.json(draw24);
+    return NextResponse.json(draw24, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

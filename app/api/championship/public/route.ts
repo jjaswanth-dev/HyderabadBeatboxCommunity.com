@@ -27,6 +27,23 @@ export async function GET() {
       await championship.save();
     }
 
+    // Auto-sync judge names to Nabinbe and Kevin
+    let judgeModified = false;
+    championship.judges.forEach((j: any) => {
+      if (j.id === "judge-1" && j.name !== "Nabinbe") {
+        j.name = "Nabinbe";
+        judgeModified = true;
+      }
+      if (j.id === "judge-2" && j.name !== "Kevin") {
+        j.name = "Kevin";
+        judgeModified = true;
+      }
+    });
+    if (judgeModified) {
+      championship.markModified("judges");
+      await championship.save();
+    }
+
     // Prepare public safe response (exclude judge secretTokens)
     const publicData = {
       _id: championship._id,
@@ -55,7 +72,7 @@ export async function GET() {
 
     return NextResponse.json(publicData, {
       headers: {
-        "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30",
+        "Cache-Control": "public, max-age=0, s-maxage=10, stale-while-revalidate=20",
       },
     });
   } catch (error: any) {

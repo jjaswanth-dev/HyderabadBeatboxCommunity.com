@@ -32,6 +32,23 @@ export async function GET(req: NextRequest) {
       await championship.save();
     }
 
+    // Auto-sync judge names to Nabinbe and Kevin
+    let judgeModified = false;
+    championship.judges.forEach((j: any) => {
+      if (j.id === "judge-1" && j.name !== "Nabinbe") {
+        j.name = "Nabinbe";
+        judgeModified = true;
+      }
+      if (j.id === "judge-2" && j.name !== "Kevin") {
+        j.name = "Kevin";
+        judgeModified = true;
+      }
+    });
+    if (judgeModified) {
+      championship.markModified("judges");
+      await championship.save();
+    }
+
     return NextResponse.json(championship);
   } catch (error: any) {
     if (error.message && error.message.includes("Not authorized")) {

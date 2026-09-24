@@ -61,7 +61,7 @@ export default function ChampionshipPublicPage() {
   const fetchData = async (isManual = false) => {
     try {
       if (isManual) setIsRefreshing(true);
-      const res = await fetch("/api/championship/public");
+      const res = await fetch("/api/championship/public", { cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -159,6 +159,8 @@ export default function ChampionshipPublicPage() {
   }, [rankedParticipants, searchQuery]);
 
   const qualifierCutoff = activeCategory === "national" ? 16 : 8;
+  const judge1Name = data?.judges?.find((j: any) => j.id === "judge-1")?.name || "Nabinbe";
+  const judge2Name = data?.judges?.find((j: any) => j.id === "judge-2")?.name || "Kevin";
 
   // Separate battles by stage
   const top16Battles = battles.filter((b) => b.roundStage === "T16");
@@ -293,8 +295,8 @@ export default function ChampionshipPublicPage() {
             <div className="bg-[#151515] border border-neutral-800 p-3.5 sm:p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-3">
               <div className="text-xs text-neutral-300 font-medium">
                 Scoring Formula:{" "}
-                <span className="text-white font-bold">Judge 1 (/60)</span> +{" "}
-                <span className="text-white font-bold">Judge 2 (/60)</span> ={" "}
+                <span className="text-white font-bold">{judge1Name} (/60)</span> +{" "}
+                <span className="text-white font-bold">{judge2Name} (/60)</span> ={" "}
                 <span className="bg-[#FDE047] text-black font-black px-1.5 py-0.5 rounded text-[11px]">
                   Total (/120)
                 </span>
@@ -322,8 +324,8 @@ export default function ChampionshipPublicPage() {
                       <th className="py-3 px-4 w-16">Rank</th>
                       <th className="py-3 px-4 w-28">Contender #</th>
                       <th className="py-3 px-4">Contender Name</th>
-                      <th className="py-3 px-4 text-center w-28 font-mono">Judge 1 (/60)</th>
-                      <th className="py-3 px-4 text-center w-28 font-mono">Judge 2 (/60)</th>
+                      <th className="py-3 px-4 text-center w-28 font-mono">{judge1Name} (/60)</th>
+                      <th className="py-3 px-4 text-center w-28 font-mono">{judge2Name} (/60)</th>
                       <th className="py-3 px-4 text-center w-36 font-mono text-white">Combined (/120)</th>
                       <th className="py-3 px-4 text-right w-44">Status</th>
                     </tr>

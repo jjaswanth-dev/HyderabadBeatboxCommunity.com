@@ -102,13 +102,13 @@ const championshipSchema = new mongoose.Schema(
       default: [
         {
           id: "judge-1",
-          name: "Judge 1",
+          name: "Nabinbe",
           secretToken: "hbc-j1-auth-48f10b7a",
           isActive: true,
         },
         {
           id: "judge-2",
-          name: "Judge 2",
+          name: "Kevin",
           secretToken: "hbc-j2-auth-92c73e15",
           isActive: true,
         },

@@ -31,7 +31,7 @@ export default function About() {
             <div className="relative w-full h-[420px] sm:h-[500px] md:h-[560px] lg:h-[620px] rounded-3xl border border-white/10 bg-gradient-to-br from-[#161616] via-[#101010] to-[#0a0a0a] overflow-hidden shadow-2xl shadow-black/80 flex items-center justify-center group hover:border-[#0066FF]/40 transition-all duration-300">
               {/* Direct Illustration Image filling container */}
               <img
-                src="https://ik.imagekit.io/qci75z79t/bbx%20Gallery%20Pics/Gal_1.webp?updatedAt=1764593246791"
+                src="https://ik.imagekit.io/qci75z79t/BBx%20Home%20Pics/IMG_8051.JPG.jpeg"
                 alt="Hyderabad Beatbox Art"
                 className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
               />

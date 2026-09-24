@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Championship from "@/models/Championship";
+import {
+  DEFAULT_NATIONAL_PARTICIPANTS,
+  DEFAULT_REGIONAL_PARTICIPANTS,
+} from "@/lib/championshipDefaults";
 
 export async function GET() {
   await connectToDatabase();
@@ -8,6 +12,19 @@ export async function GET() {
     let championship = await Championship.findOne({});
     if (!championship) {
       championship = await Championship.create({});
+    }
+
+    // Auto-sync roster if database has previous schema/data
+    if (
+      championship.national?.participants?.[0]?.name !== "Parth" ||
+      championship.regional?.participants?.[0]?.name !== "Mespop" ||
+      championship.regional?.participants?.length !== DEFAULT_REGIONAL_PARTICIPANTS.length
+    ) {
+      championship.national.participants = DEFAULT_NATIONAL_PARTICIPANTS;
+      championship.regional.participants = DEFAULT_REGIONAL_PARTICIPANTS;
+      championship.markModified("national.participants");
+      championship.markModified("regional.participants");
+      await championship.save();
     }
 
     // Prepare public safe response (exclude judge secretTokens)

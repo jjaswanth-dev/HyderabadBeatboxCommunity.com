@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Championship from "@/models/Championship";
+import {
+  DEFAULT_NATIONAL_PARTICIPANTS,
+  DEFAULT_REGIONAL_PARTICIPANTS,
+} from "@/lib/championshipDefaults";
 
 export async function GET(req: NextRequest) {
   await connectToDatabase();
@@ -18,6 +22,19 @@ export async function GET(req: NextRequest) {
     let championship = await Championship.findOne({});
     if (!championship) {
       championship = await Championship.create({});
+    }
+
+    // Auto-sync roster if database has previous schema/data
+    if (
+      championship.national?.participants?.[0]?.name !== "Parth" ||
+      championship.regional?.participants?.[0]?.name !== "Mespop" ||
+      championship.regional?.participants?.length !== DEFAULT_REGIONAL_PARTICIPANTS.length
+    ) {
+      championship.national.participants = DEFAULT_NATIONAL_PARTICIPANTS;
+      championship.regional.participants = DEFAULT_REGIONAL_PARTICIPANTS;
+      championship.markModified("national.participants");
+      championship.markModified("regional.participants");
+      await championship.save();
     }
 
     const judge = championship.judges.find(
@@ -163,16 +180,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // If this was a semi-final, auto-place the losing competitor into the 3rd place battle
-      if (battle.matchId === "SF1" || battle.matchId === "SF2" || battle.matchId === "RSF1" || battle.matchId === "RSF2") {
-        const thirdPlaceMatchId = battle.matchId.startsWith("R") ? "RTHIRD_PLACE" : "THIRD_PLACE";
-        const thirdPlaceMatch = championship[catKey].battles.find(
-          (b: any) => b.matchId === thirdPlaceMatchId
+      // If this was a semi-final in national, auto-place the losing competitor into the small final (3rd place battle)
+      if (catKey === "national" && (battle.matchId === "SF1" || battle.matchId === "SF2")) {
+        const thirdPlaceMatch = championship.national.battles.find(
+          (b: any) => b.matchId === "THIRD_PLACE"
         );
         if (thirdPlaceMatch) {
           const losingComp = battle.competitorA?.id === battle.winnerId ? battle.competitorB : battle.competitorA;
           if (losingComp) {
-            if (battle.matchId === "SF1" || battle.matchId === "RSF1") {
+            if (battle.matchId === "SF1") {
               thirdPlaceMatch.competitorA = losingComp;
             } else {
               thirdPlaceMatch.competitorB = losingComp;
@@ -234,9 +250,14 @@ export async function POST(req: NextRequest) {
     championship.markModified(`${catKey}.eliminationScores`);
     await championship.save();
 
+    const filterScoresForJudge = (scores: any[]) => {
+      return (scores || []).filter((s) => s.judgeId === judge.id);
+    };
+
     return NextResponse.json({
       success: true,
       score: scoreData,
+      myScores: filterScoresForJudge(championship[catKey].eliminationScores),
     });
   } catch (error: any) {
     return NextResponse.json(

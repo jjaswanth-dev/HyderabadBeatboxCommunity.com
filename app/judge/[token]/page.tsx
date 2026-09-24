@@ -167,9 +167,19 @@ export default function JudgeScorecardPage() {
     return Math.round(tot * 10) / 10;
   };
 
-  // Local state update ONLY — ZERO API requests fired on number clicks
+  // Local state update ONLY — Decimal precision supported (e.g. 7.5, 8.2)
   const handleScoreChange = (criteriaId: string, val: number) => {
-    setScoresState((prev) => ({ ...prev, [criteriaId]: val }));
+    const parsed = isNaN(val) ? 0 : Math.max(0, Math.min(10, Math.round(val * 10) / 10));
+    setScoresState((prev) => ({ ...prev, [criteriaId]: parsed }));
+    setIsDirty(true);
+  };
+
+  const handleScoreStep = (criteriaId: string, delta: number) => {
+    setScoresState((prev) => {
+      const curr = prev[criteriaId] ?? 0;
+      const next = Math.max(0, Math.min(10, Math.round((curr + delta) * 10) / 10));
+      return { ...prev, [criteriaId]: next };
+    });
     setIsDirty(true);
   };
 
@@ -208,6 +218,22 @@ export default function JudgeScorecardPage() {
             setNationalData((prev) => ({ ...prev, myScores: resData.myScores }));
           } else {
             setRegionalData((prev) => ({ ...prev, myScores: resData.myScores }));
+          }
+        } else if (resData.score) {
+          const updated = resData.score;
+          const updater = (prevList: ScoreRecord[]) => {
+            const idx = prevList.findIndex((s) => s.participantId === updated.participantId);
+            if (idx >= 0) {
+              const copy = [...prevList];
+              copy[idx] = updated;
+              return copy;
+            }
+            return [...prevList, updated];
+          };
+          if (activeCategory === "national") {
+            setNationalData((prev) => ({ ...prev, myScores: updater(prev.myScores) }));
+          } else {
+            setRegionalData((prev) => ({ ...prev, myScores: updater(prev.myScores) }));
           }
         }
         setTimeout(() => setSaveStatus("idle"), 3000);
@@ -514,31 +540,101 @@ export default function JudgeScorecardPage() {
                     return (
                       <div
                         key={crit.id}
-                        className="bg-[#1a1a1a] border border-neutral-800/80 p-3.5 rounded-xl"
+                        className="bg-[#1a1a1a] border border-neutral-800/80 p-3.5 sm:p-4 rounded-xl space-y-2.5"
                       >
-                        <div className="flex justify-between items-center mb-2">
-                          <label className="text-xs font-bold text-white tracking-wide">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs sm:text-sm font-bold text-white tracking-wide">
                             {crit.name}
                           </label>
-                          <span className="text-xs font-bold font-mono">
-                            <span className="text-[#FDE047] font-black text-sm">{currentVal}</span>
-                            <span className="text-neutral-500"> / {crit.maxPoints}</span>
-                          </span>
+
+                          {/* Direct Decimal Input Field & Display */}
+                          <div className="flex items-center gap-1.5 bg-[#101010] border border-neutral-700/80 px-2 py-1 rounded-lg">
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              max={crit.maxPoints}
+                              value={currentVal === 0 ? "0" : currentVal}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                handleScoreChange(crit.id, isNaN(val) ? 0 : val);
+                              }}
+                              className="w-14 bg-transparent text-right font-black font-mono text-base text-[#FDE047] focus:outline-none focus:text-white"
+                            />
+                            <span className="text-xs text-neutral-500 font-mono font-bold">
+                              / {crit.maxPoints}
+                            </span>
+                          </div>
                         </div>
 
-                        {/* 10-Point Button Grid */}
-                        <div className="grid grid-cols-10 gap-1 sm:gap-1.5">
+                        {/* Decimal Quick Steppers & Slider */}
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleScoreStep(crit.id, -0.5)}
+                              className="px-2 py-1 bg-[#222222] hover:bg-[#333333] border border-neutral-700 text-[11px] font-mono font-bold text-neutral-300 rounded active:scale-95"
+                              title="Decrease 0.5"
+                            >
+                              -0.5
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleScoreStep(crit.id, -0.1)}
+                              className="px-2 py-1 bg-[#222222] hover:bg-[#333333] border border-neutral-700 text-[11px] font-mono font-bold text-neutral-300 rounded active:scale-95"
+                              title="Decrease 0.1"
+                            >
+                              -0.1
+                            </button>
+                          </div>
+
+                          {/* Smooth Decimal Range Slider */}
+                          <input
+                            type="range"
+                            min="0"
+                            max={crit.maxPoints}
+                            step="0.1"
+                            value={currentVal}
+                            onChange={(e) => handleScoreChange(crit.id, parseFloat(e.target.value))}
+                            className="flex-1 accent-[#FDE047] h-2 bg-neutral-800 rounded-lg cursor-pointer"
+                          />
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleScoreStep(crit.id, 0.1)}
+                              className="px-2 py-1 bg-[#222222] hover:bg-[#333333] border border-neutral-700 text-[11px] font-mono font-bold text-[#FDE047] rounded active:scale-95"
+                              title="Increase 0.1"
+                            >
+                              +0.1
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleScoreStep(crit.id, 0.5)}
+                              className="px-2 py-1 bg-[#222222] hover:bg-[#333333] border border-neutral-700 text-[11px] font-mono font-bold text-[#FDE047] rounded active:scale-95"
+                              title="Increase 0.5"
+                            >
+                              +0.5
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Quick Base Integer Selector (1 to 10) */}
+                        <div className="grid grid-cols-10 gap-1 pt-1">
                           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
-                            const isChosen = currentVal === num;
+                            const isWholeMatch = currentVal === num;
+                            const isInRange = currentVal >= num && currentVal < num + 1;
                             return (
                               <button
                                 key={num}
                                 type="button"
                                 onClick={() => handleScoreChange(crit.id, num)}
-                                className={`h-9 sm:h-10 font-bold text-xs sm:text-sm rounded-lg transition-all active:scale-95 ${
-                                  isChosen
-                                    ? "bg-[#FDE047] text-black font-black shadow-md"
-                                    : "bg-[#111111] text-neutral-300 border border-neutral-700/60 hover:bg-[#252525] hover:text-white"
+                                className={`h-8 font-bold text-xs rounded transition-all active:scale-95 ${
+                                  isWholeMatch
+                                    ? "bg-[#FDE047] text-black font-black shadow-md ring-1 ring-white"
+                                    : isInRange
+                                    ? "bg-[#332b00] text-[#FDE047] border border-[#FDE047]/60"
+                                    : "bg-[#111111] text-neutral-400 border border-neutral-800 hover:bg-[#222222] hover:text-white"
                                 }`}
                               >
                                 {num}
@@ -799,8 +895,9 @@ export default function JudgeScorecardPage() {
                     <JudgeBattleBox
                       key={battle.matchId}
                       battle={battle}
-                      stageName={battle.matchId.includes("THIRD") ? "3rd Place Battle" : "Grand Final"}
+                      stageName={battle.matchId.includes("THIRD") ? "Small Final (3rd Place Battle)" : "Grand Final"}
                       isGrandFinal={battle.matchId.includes("FINAL") && !battle.matchId.includes("THIRD")}
+                      isSmallFinal={battle.matchId.includes("THIRD")}
                       onVote={(vote) => handleVoteBattle(battle.matchId, vote)}
                       onDeclare={(id, name) => handleDeclareWinner(battle.matchId, id, name)}
                     />
@@ -822,12 +919,14 @@ function JudgeBattleBox({
   battle,
   stageName,
   isGrandFinal = false,
+  isSmallFinal = false,
   onVote,
   onDeclare,
 }: {
   battle: BattleMatch;
   stageName: string;
   isGrandFinal?: boolean;
+  isSmallFinal?: boolean;
   onVote: (vote: "A" | "B") => void;
   onDeclare: (id: number, name: string) => void;
 }) {
@@ -857,8 +956,8 @@ function JudgeBattleBox({
     if (id === "QF4") return "Quarter-Final 4: Winner T16-4 vs T16-5";
     if (id === "SF1") return "Semi-Final 1: Winner QF1 vs QF4";
     if (id === "SF2") return "Semi-Final 2: Winner QF2 vs QF3";
-    if (id === "FINAL") return "Grand Final: Title Decider";
-    if (id === "THIRD_PLACE") return "3rd Place Battle";
+    if (id === "FINAL") return "Grand Final: Championship Title Match";
+    if (id === "THIRD_PLACE") return "Small Final: 3rd Place Battle (Losers of Top 4)";
     return `${stageName} • ${battle.matchId}`;
   };
 
@@ -1031,7 +1130,14 @@ function JudgeBattleBox({
           <div className="flex items-center justify-between w-full">
             <span className="text-emerald-400 font-bold flex items-center gap-1">
               <Check className="w-3.5 h-3.5 stroke-[3]" />
-              <span>Winner: <strong className="text-white">{battle.winnerName}</strong></span>
+              <span>
+                {isSmallFinal
+                  ? "3rd Place Winner: "
+                  : isGrandFinal
+                  ? "1st Place Champion: "
+                  : "Winner: "}
+                <strong className="text-white">{battle.winnerName}</strong>
+              </span>
             </span>
             {battle.nextMatchId && (
               <span className="text-neutral-400 text-[10px] font-medium flex items-center gap-1">

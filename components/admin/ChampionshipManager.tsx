@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import {
   Trophy,
   Swords,
@@ -12,11 +12,12 @@ import {
   Save,
   Share2,
   Users,
-  Award,
-  ChevronRight,
-  ListOrdered,
+  Flame,
+  Search,
+  Crown,
   RotateCcw,
   Trash2,
+  ArrowRight,
 } from "lucide-react";
 
 interface Judge {
@@ -73,7 +74,9 @@ export default function ChampionshipManager() {
   const [judges, setJudges] = useState<Judge[]>([]);
 
   const [activeCategory, setActiveCategory] = useState<"national" | "regional">("national");
+  const [activeView, setActiveView] = useState<"eliminations" | "battles">("eliminations");
   const [adminBattleFilter, setAdminBattleFilter] = useState<"ALL" | "T16" | "QF" | "SF" | "FINAL">("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [national, setNational] = useState<{
     participants: Participant[];
@@ -326,23 +329,59 @@ export default function ChampionshipManager() {
   const currentScores = currentCategoryData.eliminationScores;
   const currentBattles = currentCategoryData.battles;
 
-  const rankedContenders = currentParticipants.map((p) => {
-    const j1 = currentScores.find(
-      (s) => s.participantId === p.id && s.judgeId === "judge-1"
-    )?.totalScore || 0;
-    const j2 = currentScores.find(
-      (s) => s.participantId === p.id && s.judgeId === "judge-2"
-    )?.totalScore || 0;
-    const total = Math.round((j1 + j2) * 10) / 10;
-    return {
-      ...p,
-      j1Score: j1,
-      j2Score: j2,
-      combinedTotal: total,
-    };
-  });
+  const rankedContenders = useMemo(() => {
+    const list = currentParticipants.map((p) => {
+      const j1 = currentScores.find(
+        (s) => s.participantId === p.id && s.judgeId === "judge-1"
+      )?.totalScore || 0;
+      const j2 = currentScores.find(
+        (s) => s.participantId === p.id && s.judgeId === "judge-2"
+      )?.totalScore || 0;
+      const total = Math.round((j1 + j2) * 10) / 10;
+      return {
+        ...p,
+        j1Score: j1,
+        j2Score: j2,
+        combinedTotal: total,
+      };
+    });
 
-  rankedContenders.sort((a, b) => b.combinedTotal - a.combinedTotal);
+    list.sort((a, b) => {
+      if (b.combinedTotal !== a.combinedTotal) {
+        return b.combinedTotal - a.combinedTotal;
+      }
+      // If both are un-scored (0 points), preserve confirmed roster order
+      if ((a.combinedTotal || 0) === 0 && (b.combinedTotal || 0) === 0) {
+        return a.id - b.id;
+      }
+      // Tier 2: Highest peak judge score
+      const maxA = Math.max(a.j1Score || 0, a.j2Score || 0);
+      const maxB = Math.max(b.j1Score || 0, b.j2Score || 0);
+      if (maxB !== maxA) {
+        return maxB - maxA;
+      }
+      // Tier 3: Ascending alphabetical order by name
+      const nameComp = (a.name || "").localeCompare(b.name || "", undefined, {
+        sensitivity: "base",
+      });
+      if (nameComp !== 0) {
+        return nameComp;
+      }
+      return a.id - b.id;
+    });
+    return list;
+  }, [currentParticipants, currentScores]);
+
+  const filteredRankings = useMemo(() => {
+    if (!searchQuery.trim()) return rankedContenders;
+    const q = searchQuery.toLowerCase();
+    return rankedContenders.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.contenderNumber.toLowerCase().includes(q)
+    );
+  }, [rankedContenders, searchQuery]);
+
   const qualifierThreshold = activeCategory === "national" ? 16 : 8;
 
   // Split battles by stage
@@ -354,44 +393,159 @@ export default function ChampionshipManager() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[350px]">
-        <div className="border-4 border-white border-t-transparent w-10 h-10 animate-spin mb-4" />
-        <div className="bg-[#1e1e1e] border-2 border-white px-4 py-2 text-xs font-mono font-bold uppercase">
-          LOADING CHAMPIONSHIP ENGINE...
-        </div>
+        <div className="border-3 border-white border-t-transparent w-8 h-8 animate-spin rounded-full mb-3" />
+        <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+          Loading Championship Engine...
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-16 font-mono text-white selection:bg-white selection:text-black">
-      {/* Top Banner in Dark Grey & White Neubrutalism */}
-      <div className="border-4 border-white bg-[#181818] p-6 shadow-[8px_8px_0px_0px_#ffffff] rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <span className="bg-white text-black font-black text-xs px-2.5 py-0.5 border border-black uppercase tracking-wider inline-block rounded-md">
-            CHAMPIONSHIP MANAGER
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black uppercase text-white mt-2 tracking-tight">
-            HBC 2026 SCORING & TOURNAMENT ENGINE
-          </h2>
-          <p className="text-neutral-400 text-xs mt-1">
-            Manage isolated judge access links, monitor elimination rankings, auto-seed battles, and control winner progression.
-          </p>
+    <div className="space-y-6 max-w-6xl mx-auto pb-16 text-white selection:bg-[#FDE047] selection:text-black">
+      {/* Top Header Card matching Public View */}
+      <div className="bg-[#151515] border-2 border-neutral-800 rounded-2xl p-5 sm:p-7 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+        {/* Header Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-neutral-800">
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex items-center gap-1.5 bg-[#FDE047] text-black font-extrabold text-[11px] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+              <Crown className="w-3.5 h-3.5" /> ADMIN CONTROLLER
+            </span>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase">
+              {title}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={loadData}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#222222] hover:bg-[#2e2e2e] border border-neutral-700/80 text-xs font-bold text-neutral-200 hover:text-white transition-all active:scale-95 shadow-sm"
+              title="Refresh latest scores and battles"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#FDE047]" : "text-neutral-400"}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
-        <button
-          onClick={loadData}
-          className="px-4 py-2.5 bg-black border-2 border-white hover:bg-white hover:text-black text-white text-xs font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#ffffff] transition-all flex items-center gap-2 rounded-xl"
-        >
-          <RefreshCw className="w-4 h-4" /> REFRESH SCORES
-        </button>
+        {/* Division & Phase Switcher Controls matching Public View */}
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {/* Division Switcher */}
+          <div>
+            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block mb-1.5">
+              Division
+            </span>
+            <div className="bg-[#0e0e0e] p-1 rounded-xl border border-neutral-800 flex">
+              <button
+                type="button"
+                onClick={() => setActiveCategory("national")}
+                className={`flex-1 py-2 px-3 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  activeCategory === "national"
+                    ? "bg-[#FDE047] text-black shadow-md"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                <span>National Division (25)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveCategory("regional")}
+                className={`flex-1 py-2 px-3 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  activeCategory === "regional"
+                    ? "bg-[#FB7185] text-black shadow-md"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                <span>Regional Division (13)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* View Phase Switcher */}
+          <div>
+            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block mb-1.5">
+              Admin View Mode
+            </span>
+            <div className="bg-[#0e0e0e] p-1 rounded-xl border border-neutral-800 flex">
+              <button
+                type="button"
+                onClick={() => setActiveView("eliminations")}
+                className={`flex-1 py-2 px-3 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  activeView === "eliminations"
+                    ? "bg-[#38BDF8] text-black shadow-md"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5" />
+                <span>Elimination Scoreboard</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("battles")}
+                className={`flex-1 py-2 px-3 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  activeView === "battles"
+                    ? "bg-[#A78BFA] text-black shadow-md"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Swords className="w-3.5 h-3.5" />
+                <span>Battle Bracket Controller</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Global Action Bar: Auto-Seed & Clear Data Controls */}
+        <div className="mt-4 pt-4 border-t border-neutral-800/80 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSeedBattles}
+              disabled={saving}
+              className="px-4 py-2 bg-[#38BDF8] hover:bg-sky-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 shadow-md active:scale-95"
+              title="Seed ranked qualifiers into battle bracket"
+            >
+              <Swords className="w-3.5 h-3.5" />
+              <span>Auto-Seed Top {qualifierThreshold} Battles</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleClearData(activeCategory)}
+              disabled={saving}
+              className="px-3.5 py-2 bg-rose-500/15 hover:bg-rose-500 hover:text-white border border-rose-500/30 text-rose-400 text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 active:scale-95"
+              title={`Reset all scores and battle matches for ${activeCategory.toUpperCase()}`}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Clear {activeCategory.toUpperCase()} Data</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleClearData("all")}
+              disabled={saving}
+              className="px-3 py-2 bg-[#1f1f1f] hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700/80 text-xs font-bold uppercase rounded-xl transition-all flex items-center gap-1.5 active:scale-95"
+              title="Reset all categories to fresh unseeded state"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Clear All</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {feedback && (
         <div
-          className={`p-4 border-3 text-xs font-black uppercase flex items-center justify-between shadow-[4px_4px_0px_0px_#ffffff] rounded-xl ${
+          className={`p-4 border text-xs font-bold uppercase flex items-center justify-between rounded-xl shadow-md ${
             feedback.type === "success"
-              ? "bg-white text-black border-white"
-              : "bg-black text-white border-white"
+              ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/50"
+              : "bg-rose-950/40 text-rose-300 border-rose-500/50"
           }`}
         >
           <span>{feedback.text}</span>
@@ -401,17 +555,16 @@ export default function ChampionshipManager() {
         </div>
       )}
 
-      {/* Global Settings & Public Visibility Controls */}
-      <div className="border-3 border-white bg-[#181818] p-6 shadow-[6px_6px_0px_0px_#ffffff] space-y-5 rounded-2xl">
-        <h3 className="text-xs uppercase tracking-widest font-black text-white border-b-2 border-white pb-2 flex items-center gap-2">
-          PUBLIC WEBSITE SETTINGS
+      {/* Public Hub Settings Card */}
+      <div className="bg-[#151515] border border-neutral-800 p-5 rounded-2xl shadow-xl space-y-4">
+        <h3 className="text-xs uppercase tracking-widest font-black text-white pb-2 border-b border-neutral-800 flex items-center gap-2">
+          Public Website Visibility Settings
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Active Switch */}
-          <div className="bg-[#121212] border-2 border-white p-4 flex items-center justify-between rounded-xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-[#101010] border border-neutral-800 p-3.5 flex items-center justify-between rounded-xl">
             <div>
-              <div className="text-xs font-black uppercase text-white">CHAMPIONSHIP HUB</div>
+              <div className="text-xs font-bold text-white">Championship Hub Active</div>
               <div className="text-[11px] text-neutral-400">
                 Show &apos;/championship&apos; page & header nav
               </div>
@@ -423,17 +576,16 @@ export default function ChampionshipManager() {
                 onChange={(e) => setIsActive(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-12 h-6 bg-neutral-800 peer-focus:outline-none border-2 border-white peer peer-checked:after:translate-x-full peer-checked:after:border-black after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-white after:h-5 after:w-5 after:transition-all peer-checked:bg-white peer-checked:after:bg-black rounded-full"></div>
+              <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FDE047] peer-checked:after:bg-black"></div>
             </label>
           </div>
 
-          {/* Active Stage Selector */}
-          <div className="bg-[#121212] border-2 border-white p-4 rounded-xl">
-            <div className="text-xs font-black uppercase text-white mb-1.5">PUBLIC STAGE VISIBILITY</div>
+          <div className="bg-[#101010] border border-neutral-800 p-3.5 rounded-xl">
+            <div className="text-xs font-bold text-white mb-1">Public Stage Visibility</div>
             <select
               value={activeStage}
               onChange={(e: any) => setActiveStage(e.target.value)}
-              className="w-full bg-black border-2 border-white p-2 text-xs text-white font-black uppercase focus:outline-none rounded-lg"
+              className="w-full bg-[#161616] border border-neutral-700 p-2 text-xs text-white font-medium rounded-lg focus:outline-none focus:border-white"
             >
               <option value="eliminations">Elimination Leaderboard Only</option>
               <option value="battles">Battle Brackets Only</option>
@@ -441,32 +593,31 @@ export default function ChampionshipManager() {
             </select>
           </div>
 
-          {/* Save Button */}
           <div className="flex items-end">
             <button
+              type="button"
               onClick={handleSaveSettings}
               disabled={saving}
-              className="w-full py-3 bg-white text-black border-2 border-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#888888] transition-all flex items-center justify-center gap-2 rounded-xl"
+              className="w-full py-2.5 bg-white text-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
             >
-              <Save className="w-4 h-4" /> {saving ? "SAVING..." : "SAVE PUBLIC SETTINGS"}
+              <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Public Settings"}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Judge Isolated Links Management */}
-      <div className="border-3 border-white bg-[#181818] p-6 shadow-[6px_6px_0px_0px_#ffffff] space-y-4 rounded-2xl">
+      {/* Judge Isolated Scorecard Links Management */}
+      <div className="bg-[#151515] border border-neutral-800 p-5 rounded-2xl shadow-xl space-y-4">
         <div>
           <h3 className="text-xs uppercase tracking-widest font-black text-white flex items-center gap-2">
-            <Shield className="w-4 h-4 text-white" /> JUDGE ISOLATED SCORECARD LINKS
+            <Shield className="w-4 h-4 text-[#FDE047]" /> Isolated Judge Scorecard Links
           </h3>
           <p className="text-xs text-neutral-400 mt-1">
-            Give each judge their specific private link. Judges open these links on their phones directly without any login password.
-            Judge 1 cannot see or alter Judge 2&apos;s scores!
+            Send each judge their isolated scorecard link. Judge 1 cannot view or modify Judge 2&apos;s scores.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {judges.map((judge) => {
             const origin = typeof window !== "undefined" ? window.location.origin : "";
             const judgeUrl = `${origin}/judge/${judge.secretToken}`;
@@ -475,58 +626,61 @@ export default function ChampionshipManager() {
             return (
               <div
                 key={judge.id}
-                className="bg-[#141414] border-2 border-white p-4 space-y-3 shadow-[4px_4px_0px_0px_#ffffff] rounded-xl"
+                className="bg-[#101010] border border-neutral-800 p-4 space-y-3 rounded-xl shadow-md"
               >
-                <div className="flex items-center justify-between border-b-2 border-neutral-700 pb-2">
+                <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
                   <span className="text-xs font-black uppercase text-white tracking-wider">
                     {judge.name}
                   </span>
-                  <span className="text-[10px] uppercase font-black px-2 py-0.5 bg-white text-black border border-black rounded-md">
-                    ISOLATED LINK
+                  <span className="text-[10px] uppercase font-black px-2 py-0.5 bg-[#FDE047] text-black rounded-md">
+                    Isolated Link
                   </span>
                 </div>
 
-                <div className="bg-black border-2 border-neutral-600 p-2.5 text-[11px] text-neutral-300 break-all select-all font-mono rounded-lg">
+                <div className="bg-[#161616] border border-neutral-800 p-2.5 text-[11px] text-neutral-300 break-all select-all font-mono rounded-lg">
                   {judgeUrl}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <button
+                    type="button"
                     onClick={() => copyJudgeLink(judge.secretToken, judge.name)}
-                    className="flex-1 py-2 bg-white text-black border border-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_#888888] rounded-lg"
+                    className="flex-1 py-1.5 bg-white text-black hover:bg-neutral-200 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
                   >
                     {isCopied ? (
                       <>
-                        <Check className="w-3.5 h-3.5" /> COPIED!
+                        <Check className="w-3.5 h-3.5" /> Copied!
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" /> COPY LINK
+                        <Copy className="w-3.5 h-3.5" /> Copy Link
                       </>
                     )}
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => shareJudgeLinkWhatsApp(judge.secretToken, judge.name)}
-                    className="py-2 px-3 bg-[#242424] border border-white hover:bg-white hover:text-black text-white text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 rounded-lg"
+                    className="py-1.5 px-3 bg-[#242424] hover:bg-[#303030] text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
                     title="Share via WhatsApp"
                   >
-                    <Share2 className="w-3.5 h-3.5" /> WHATSAPP
+                    <Share2 className="w-3.5 h-3.5" /> WhatsApp
                   </button>
 
                   <a
                     href={`/judge/${judge.secretToken}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2 bg-[#242424] border border-white hover:bg-white hover:text-black text-white transition-colors rounded-lg"
+                    className="p-1.5 bg-[#242424] hover:bg-[#303030] text-white rounded-lg transition-colors"
                     title="Open Scorecard"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
 
                   <button
+                    type="button"
                     onClick={() => handleRegenerateToken(judge.id)}
-                    className="p-2 bg-[#242424] border border-white hover:bg-white hover:text-black text-neutral-400 hover:text-black transition-colors rounded-lg"
+                    className="p-1.5 bg-[#242424] hover:bg-[#303030] text-neutral-400 hover:text-white rounded-lg transition-colors"
                     title="Regenerate Secret Token"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -538,341 +692,360 @@ export default function ChampionshipManager() {
         </div>
       </div>
 
-      {/* Category Tabs: National vs Regional & Auto-Seed Button */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b-2 border-white pb-5">
-        <div className="flex flex-wrap gap-2.5">
-          <button
-            onClick={() => setActiveCategory("national")}
-            className={`px-5 py-3 border-3 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 rounded-xl ${
-              activeCategory === "national"
-                ? "bg-[#FDE047] text-black border-black shadow-[4px_4px_0px_0px_#ffffff] font-black"
-                : "bg-[#141414] text-neutral-300 border-neutral-700 hover:border-white"
-            }`}
-          >
-            <Trophy className="w-4 h-4" /> NATIONAL (25 CONTENDERS)
-          </button>
+      {/* Main View Area: Elimination Leaderboard or Battle Brackets */}
+      {activeView === "eliminations" ? (
+        /* ELIMINATION LEADERBOARD (MATCHING PUBLIC UI) */
+        <div className="space-y-4">
+          <div className="bg-[#151515] border border-neutral-800 p-3.5 sm:p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="text-xs text-neutral-300 font-medium">
+              Formula: <span className="text-white font-bold">Judge 1 (/60.0)</span> +{" "}
+              <span className="text-white font-bold">Judge 2 (/60.0)</span> ={" "}
+              <span className="bg-[#FDE047] text-black font-black px-1.5 py-0.5 rounded text-[11px]">
+                Total (/120.0)
+              </span>
+            </div>
 
-          <button
-            onClick={() => setActiveCategory("regional")}
-            className={`px-5 py-3 border-3 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 rounded-xl ${
-              activeCategory === "regional"
-                ? "bg-[#FB7185] text-black border-black shadow-[4px_4px_0px_0px_#ffffff] font-black"
-                : "bg-[#141414] text-neutral-300 border-neutral-700 hover:border-white"
-            }`}
-          >
-            <Users className="w-4 h-4" /> REGIONAL (16 CONTENDERS)
-          </button>
-        </div>
-
-        {/* Action Controls: Auto-Seed & Clear Test Data */}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleSeedBattles}
-            disabled={saving}
-            className="px-5 py-3 bg-[#38BDF8] text-black border-3 border-black hover:bg-sky-300 text-xs font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#ffffff] transition-all flex items-center gap-2 active:translate-x-0.5 active:translate-y-0.5 rounded-xl cursor-pointer"
-            title="Click once after both judges finish scoring eliminations"
-          >
-            <Swords className="w-4 h-4 text-black" />
-            <span>AUTO-SEED TOP {qualifierThreshold} BATTLES</span>
-          </button>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleClearData(activeCategory)}
-              disabled={saving}
-              className="px-4 py-3 bg-[#e11d48] text-white border-3 border-black hover:bg-rose-600 text-xs font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_#ffffff] transition-all flex items-center gap-1.5 active:translate-x-0.5 active:translate-y-0.5 rounded-xl cursor-pointer"
-              title={`Reset all scores and battle progression for ${activeCategory.toUpperCase()}`}
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>CLEAR {activeCategory.toUpperCase()} DATA</span>
-            </button>
-
-            <button
-              onClick={() => handleClearData("all")}
-              disabled={saving}
-              className="px-3.5 py-3 bg-[#242424] text-neutral-300 hover:text-white hover:bg-neutral-800 border-2 border-neutral-700 hover:border-white text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 rounded-xl cursor-pointer"
-              title="Reset both National and Regional divisions to fresh unseeded state"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-              <span>CLEAR ALL</span>
-            </button>
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search contender..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#0d0d0d] border border-neutral-700 pl-9 pr-3 py-1.5 text-xs text-white placeholder-neutral-500 rounded-lg focus:outline-none focus:border-white transition-colors"
+              />
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* SECTION 1: MASTER ELIMINATION SCOREBOARD TABLE */}
-      <div className="border-3 border-white bg-[#181818] p-6 shadow-[6px_6px_0px_0px_#ffffff] space-y-4 rounded-2xl">
-        <div className="flex flex-col md:flex-row justify-between md:items-center gap-2 border-b-2 border-white pb-3">
-          <div>
-            <h3 className="text-xs uppercase tracking-widest font-black text-white flex items-center gap-2">
-              <Award className="w-4 h-4 text-white" /> MASTER ELIMINATION SCOREBOARD (COMBINED)
-            </h3>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              Rankings update automatically as Judge 1 and Judge 2 score. Top {qualifierThreshold} advance to Battles.
-            </p>
-          </div>
-          <div className="text-xs font-mono font-bold text-neutral-300">
-            QUALIFYING THRESHOLD: <strong className="bg-white text-black px-1.5 py-0.5 rounded-md">TOP {qualifierThreshold}</strong>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto border-2 border-white rounded-xl">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-white text-black uppercase font-mono text-[10px] tracking-wider border-b-2 border-black">
-              <tr>
-                <th className="py-3 px-4 border-r-2 border-black">RANK</th>
-                <th className="py-3 px-4 border-r-2 border-black">CONTENDER #</th>
-                <th className="py-3 px-4 border-r-2 border-black">CONTENDER NAME</th>
-                <th className="py-3 px-4 text-center border-r-2 border-black">JUDGE 1 (/60)</th>
-                <th className="py-3 px-4 text-center border-r-2 border-black">JUDGE 2 (/60)</th>
-                <th className="py-3 px-4 text-center border-r-2 border-black font-black">COMBINED TOTAL (/120)</th>
-                <th className="py-3 px-4 text-right">BATTLE STATUS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y-2 divide-neutral-700">
-              {rankedContenders.map((contender, idx) => {
-                const rank = idx + 1;
-                const isQualified = rank <= qualifierThreshold && contender.combinedTotal > 0;
-
-                return (
-                  <tr
-                    key={contender.id}
-                    className={`transition-colors ${
-                      isQualified
-                        ? "bg-[#222222] hover:bg-[#2a2a2a]"
-                        : "hover:bg-[#1a1a1a]"
-                    }`}
-                  >
-                    <td className="py-3 px-4 font-black border-r-2 border-neutral-700">
-                      {rank <= 3 ? (
-                        <span className="bg-white text-black px-2 py-0.5 border border-black inline-block rounded-md">
-                          #{rank}
-                        </span>
-                      ) : (
-                        <span className="text-neutral-400">#{rank}</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-neutral-400 border-r-2 border-neutral-700">
-                      {contender.contenderNumber}
-                    </td>
-                    <td className="py-3 px-4 font-black uppercase text-white border-r-2 border-neutral-700">
-                      {contender.name}
-                    </td>
-                    <td className="py-3 px-4 text-center font-mono text-neutral-300 border-r-2 border-neutral-700">
-                      {contender.j1Score.toFixed(1)}
-                    </td>
-                    <td className="py-3 px-4 text-center font-mono text-neutral-300 border-r-2 border-neutral-700">
-                      {contender.j2Score.toFixed(1)}
-                    </td>
-                    <td className="py-3 px-4 text-center font-mono font-black text-white text-sm border-r-2 border-neutral-700">
-                      {contender.combinedTotal > 0 ? (
-                        <span className="bg-white text-black px-2 py-0.5 border border-black inline-block rounded-md">
-                          {contender.combinedTotal.toFixed(1)}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right font-mono">
-                      {isQualified ? (
-                        <span className="px-2.5 py-1 bg-emerald-400 text-black text-[10px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_0px_#000000] rounded-md">
-                          TOP {qualifierThreshold} ADVANCE
-                        </span>
-                      ) : (
-                        <span className="text-neutral-500 text-[10px] uppercase font-bold">
-                          {contender.combinedTotal === 0 ? "PENDING" : "ELIMINATED"}
-                        </span>
-                      )}
-                    </td>
+          <div className="border border-neutral-800 bg-[#141414] overflow-hidden rounded-2xl shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-[#1c1c1c] text-neutral-300 font-bold text-[11px] uppercase tracking-wider border-b border-neutral-800">
+                  <tr>
+                    <th className="py-3 px-4 w-16">Rank</th>
+                    <th className="py-3 px-4 w-28">Contender #</th>
+                    <th className="py-3 px-4">Contender Name</th>
+                    <th className="py-3 px-4 text-center w-28 font-mono">Judge 1 (/60)</th>
+                    <th className="py-3 px-4 text-center w-28 font-mono">Judge 2 (/60)</th>
+                    <th className="py-3 px-4 text-center w-36 font-mono text-white">Combined (/120)</th>
+                    <th className="py-3 px-4 text-right w-44">Battle Status</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody className="divide-y divide-neutral-800/80">
+                  {filteredRankings.map((contender, index) => {
+                    const rank = index + 1;
+                    const isTopQualified = rank <= qualifierThreshold && contender.combinedTotal > 0;
+                    const showCutoffLineAfter =
+                      rank === qualifierThreshold && filteredRankings.length > qualifierThreshold;
 
-      {/* SECTION 2: BATTLE BRACKET CONTROLLER (DIFFERENTIATED STAGES & COMPLETE NAMES) */}
-      <div className="border-3 border-white bg-[#181818] p-6 shadow-[6px_6px_0px_0px_#ffffff] space-y-6 rounded-2xl">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b-2 border-white pb-3">
-          <div>
-            <h3 className="text-xs uppercase tracking-widest font-black text-white flex items-center gap-2">
-              <Swords className="w-4 h-4 text-white" /> BATTLE TOURNAMENT CONTROLLER (WINNER SELECTION)
-            </h3>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              Click &quot;Pick Winner&quot; for any battle. The winner will automatically advance into their slot in Top 8, Top 4, or Grand Final!
-            </p>
+                    return (
+                      <Fragment key={contender.id}>
+                        <tr
+                          className={`transition-colors ${
+                            isTopQualified
+                              ? "bg-emerald-950/15 hover:bg-emerald-950/30"
+                              : "hover:bg-neutral-800/30"
+                          }`}
+                        >
+                          {/* Rank with Medal Badges */}
+                          <td className="py-3 px-4 font-black text-sm">
+                            {rank === 1 ? (
+                              <span className="bg-[#FDE047] text-black px-2 py-0.5 rounded-md font-black inline-flex items-center gap-1 shadow-sm">
+                                🥇 1
+                              </span>
+                            ) : rank === 2 ? (
+                              <span className="bg-neutral-200 text-black px-2 py-0.5 rounded-md font-black inline-flex items-center gap-1">
+                                🥈 2
+                              </span>
+                            ) : rank === 3 ? (
+                              <span className="bg-[#f97316] text-black px-2 py-0.5 rounded-md font-black inline-flex items-center gap-1">
+                                🥉 3
+                              </span>
+                            ) : isTopQualified ? (
+                              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold">
+                                #{rank}
+                              </span>
+                            ) : (
+                              <span className="text-neutral-500 font-medium">#{rank}</span>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-4 font-mono font-bold text-neutral-400">
+                            {contender.contenderNumber}
+                          </td>
+
+                          <td className="py-3 px-4 font-bold text-white text-sm">
+                            {contender.name}
+                          </td>
+
+                          <td className="py-3 px-4 text-center font-mono font-bold text-neutral-300">
+                            {contender.j1Score > 0 ? contender.j1Score.toFixed(1) : "—"}
+                          </td>
+
+                          <td className="py-3 px-4 text-center font-mono font-bold text-neutral-300">
+                            {contender.j2Score > 0 ? contender.j2Score.toFixed(1) : "—"}
+                          </td>
+
+                          <td className="py-3 px-4 text-center font-mono font-black text-white text-sm">
+                            {contender.combinedTotal > 0 ? (
+                              <span className="bg-neutral-800 text-[#FDE047] px-2.5 py-1 rounded-md border border-neutral-700">
+                                {contender.combinedTotal.toFixed(1)}
+                              </span>
+                            ) : (
+                              <span className="text-neutral-500">—</span>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-4 text-right">
+                            {isTopQualified ? (
+                              <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
+                                <Check className="w-3 h-3 stroke-[3]" /> Top {qualifierThreshold} Qualified
+                              </span>
+                            ) : contender.combinedTotal > 0 ? (
+                              <span className="text-neutral-500 text-[11px] font-medium">
+                                Eliminated
+                              </span>
+                            ) : (
+                              <span className="text-neutral-500 text-[11px] italic">
+                                Pending Score
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+
+                        {/* Cutoff Divider Line matching Public View */}
+                        {showCutoffLineAfter && (
+                          <tr key={`${contender.id}-cutoff`} className="bg-emerald-500/10 border-y-2 border-dashed border-emerald-500/60">
+                            <td colSpan={7} className="py-2.5 px-4 text-center">
+                              <div className="flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-wider text-emerald-400">
+                                <span>▲</span>
+                                <span>Top {qualifierThreshold} Qualify For Battle Tournament</span>
+                                <span className="hidden sm:inline">&bull; Contenders below are eliminated</span>
+                                <span>▲</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
+        </div>
+      ) : (
+        /* BATTLE BRACKET CONTROLLER (MATCHING PUBLIC UI WITH WINNER SELECTION) */
+        <div className="space-y-6">
+          {/* Stage Filter Tabs matching Public UI */}
+          <div className="bg-[#151515] border border-neutral-800 p-3 sm:p-4 rounded-xl flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-black uppercase text-white tracking-wide flex items-center gap-2">
+                <Swords className="w-4 h-4 text-[#A78BFA]" />
+                {activeCategory === "national"
+                  ? "National Battle Controller"
+                  : "Regional Battle Controller"}
+              </h2>
+              <span className="text-xs text-neutral-400">
+                Pick official winners to automatically advance contenders through the bracket.
+              </span>
+            </div>
 
-          <div className="flex flex-wrap gap-1.5 text-xs font-black uppercase">
-            <button
-              onClick={() => setAdminBattleFilter("ALL")}
-              className={`px-3 py-1.5 border-2 border-white transition-all rounded-lg ${
-                adminBattleFilter === "ALL"
-                  ? "bg-white text-black shadow-[2px_2px_0px_0px_#888888]"
-                  : "bg-[#141414] text-neutral-400 hover:text-white"
-              }`}
-            >
-              ALL
-            </button>
-            {top16Battles.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 text-xs font-bold">
               <button
-                onClick={() => setAdminBattleFilter("T16")}
-                className={`px-3 py-1.5 border-2 border-white transition-all rounded-lg ${
-                  adminBattleFilter === "T16"
-                    ? "bg-white text-black shadow-[2px_2px_0px_0px_#888888]"
-                    : "bg-[#141414] text-neutral-400 hover:text-white"
+                type="button"
+                onClick={() => setAdminBattleFilter("ALL")}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  adminBattleFilter === "ALL"
+                    ? "bg-white text-black font-black"
+                    : "bg-[#202020] text-neutral-300 hover:text-white"
                 }`}
               >
-                TOP 16
+                All Matches
               </button>
-            )}
-            <button
-              onClick={() => setAdminBattleFilter("QF")}
-              className={`px-3 py-1.5 border-2 border-white transition-all rounded-lg ${
-                adminBattleFilter === "QF"
-                  ? "bg-white text-black shadow-[2px_2px_0px_0px_#888888]"
-                  : "bg-[#141414] text-neutral-400 hover:text-white"
-              }`}
-            >
-              TOP 8 (QF)
-            </button>
-            <button
-              onClick={() => setAdminBattleFilter("SF")}
-              className={`px-3 py-1.5 border-2 border-white transition-all rounded-lg ${
-                adminBattleFilter === "SF"
-                  ? "bg-white text-black shadow-[2px_2px_0px_0px_#888888]"
-                  : "bg-[#141414] text-neutral-400 hover:text-white"
-              }`}
-            >
-              TOP 4 (SF)
-            </button>
-            <button
-              onClick={() => setAdminBattleFilter("FINAL")}
-              className={`px-3 py-1.5 border-2 border-white transition-all rounded-lg ${
-                adminBattleFilter === "FINAL"
-                  ? "bg-white text-black shadow-[2px_2px_0px_0px_#888888]"
-                  : "bg-[#141414] text-neutral-400 hover:text-white"
-              }`}
-            >
-              FINALS
-            </button>
+              {top16Battles.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAdminBattleFilter("T16")}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    adminBattleFilter === "T16"
+                      ? "bg-[#38BDF8] text-black font-black"
+                      : "bg-[#202020] text-neutral-300 hover:text-white"
+                  }`}
+                >
+                  Top 16
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setAdminBattleFilter("QF")}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  adminBattleFilter === "QF"
+                    ? "bg-[#FDE047] text-black font-black"
+                    : "bg-[#202020] text-neutral-300 hover:text-white"
+                }`}
+              >
+                Top 8 (QF)
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminBattleFilter("SF")}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  adminBattleFilter === "SF"
+                    ? "bg-[#FB7185] text-black font-black"
+                    : "bg-[#202020] text-neutral-300 hover:text-white"
+                }`}
+              >
+                Top 4 (SF)
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminBattleFilter("FINAL")}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  adminBattleFilter === "FINAL"
+                    ? "bg-[#4ADE80] text-black font-black"
+                    : "bg-[#202020] text-neutral-300 hover:text-white"
+                }`}
+              >
+                Finals
+              </button>
+            </div>
           </div>
+
+          {/* STAGE 1: TOP 16 */}
+          {top16Battles.length > 0 && (adminBattleFilter === "ALL" || adminBattleFilter === "T16") && (
+            <div className="space-y-3">
+              <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8] ring-2 ring-[#38BDF8]/30" />
+                  <h3 className="text-sm font-black uppercase text-white tracking-wider">
+                    Stage 1: Top 16 Battles
+                  </h3>
+                </div>
+                <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
+                  8 Matches &bull; 1 min × 2 rounds &bull; Winners Advance to Top 8
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {top16Battles.map((battle) => (
+                  <AdminPublicStyleBattleCard
+                    key={battle.matchId}
+                    battle={battle}
+                    onPickWinner={(id, name) => handleSetBattleWinner(battle.matchId, id, name)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STAGE 2: TOP 8 QUARTER-FINALS */}
+          {quarterFinals.length > 0 && (adminBattleFilter === "ALL" || adminBattleFilter === "QF") && (
+            <div className="space-y-3">
+              <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FDE047] ring-2 ring-[#FDE047]/30" />
+                  <h3 className="text-sm font-black uppercase text-white tracking-wider">
+                    Stage 2: Top 8 Quarter-Finals
+                  </h3>
+                </div>
+                <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
+                  4 Matches &bull; 1 min × 2 rounds &bull; Winners Advance to Top 4
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {quarterFinals.map((battle) => (
+                  <AdminPublicStyleBattleCard
+                    key={battle.matchId}
+                    battle={battle}
+                    onPickWinner={(id, name) => handleSetBattleWinner(battle.matchId, id, name)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STAGE 3: TOP 4 SEMI-FINALS */}
+          {semiFinals.length > 0 && (adminBattleFilter === "ALL" || adminBattleFilter === "SF") && (
+            <div className="space-y-3">
+              <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FB7185] ring-2 ring-[#FB7185]/30" />
+                  <h3 className="text-sm font-black uppercase text-white tracking-wider">
+                    Stage 3: Top 4 Semi-Finals
+                  </h3>
+                </div>
+                <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
+                  2 Matches &bull; 1:30 min × 2 rounds &bull; Winners Advance to Grand Final
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {semiFinals.map((battle) => (
+                  <AdminPublicStyleBattleCard
+                    key={battle.matchId}
+                    battle={battle}
+                    onPickWinner={(id, name) => handleSetBattleWinner(battle.matchId, id, name)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STAGE 4: FINALS & SMALL FINAL */}
+          {finalBattles.length > 0 && (adminBattleFilter === "ALL" || adminBattleFilter === "FINAL") && (
+            <div className="space-y-3">
+              <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] ring-2 ring-[#4ADE80]/30" />
+                  <h3 className="text-sm font-black uppercase text-white tracking-wider">
+                    {activeCategory === "national"
+                      ? "Stage 4: Grand Final & Small Final (3rd Place Battle)"
+                      : "Stage 4: Regional Grand Final"}
+                  </h3>
+                </div>
+                <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
+                  Championship Deciders &bull; 1:30 min × 2 rounds
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {finalBattles.map((battle) => (
+                  <AdminPublicStyleBattleCard
+                    key={battle.matchId}
+                    battle={battle}
+                    isGrandFinal={battle.matchId.includes("FINAL") && !battle.matchId.includes("THIRD")}
+                    isSmallFinal={battle.matchId.includes("THIRD")}
+                    onPickWinner={(id, name) => handleSetBattleWinner(battle.matchId, id, name)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* STAGE 1: TOP 16 BATTLES */}
-        {top16Battles.length > 0 && (adminBattleFilter === "ALL" || adminBattleFilter === "T16") && (
-          <div className="space-y-3">
-            <div className="bg-[#242424] border-2 border-white px-3.5 py-2 flex items-center justify-between shadow-[3px_3px_0px_0px_#ffffff] rounded-xl">
-              <span className="font-black text-xs uppercase tracking-widest text-white">
-                STAGE 1 &bull; TOP 16 BATTLES (8 MATCHES &bull; 1 MIN X 2 ROUNDS)
-              </span>
-              <span className="text-[10px] bg-black text-white px-2 py-0.5 border border-white rounded-md">
-                WINNERS ADVANCE TO TOP 8
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {top16Battles.map((battle) => (
-                <AdminBattleCard
-                  key={battle.matchId}
-                  battle={battle}
-                  onPickWinner={(id, name) => handleSetBattleWinner(battle.matchId, id, name)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* STAGE 2: TOP 8 QUARTER-FINALS (QUARTILE) */}
-        {quarterFinals.length > 0 && (adminBattleFilter === "ALL" || adminBattleFilter === "QF") && (
-          <div className="space-y-3">
-            <div className="bg-[#242424] border-2 border-white px-3.5 py-2 flex items-center justify-between shadow-[3px_3px_0px_0px_#ffffff] rounded-xl">
-              <span className="font-black text-xs uppercase tracking-widest text-white">
-                STAGE 2 &bull; TOP 8 QUARTER-FINALS (QUARTILE &bull; 4 MATCHES &bull; 1 MIN X 2 ROUNDS)
-              </span>
-              <span className="text-[10px] bg-black text-white px-2 py-0.5 border border-white rounded-md">
-                WINNERS ADVANCE TO TOP 4
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quarterFinals.map((battle) => (
-                <AdminBattleCard
-                  key={battle.matchId}
-                  battle={battle}
-                  onPickWinner={(id, name) => handleSetBattleWinner(battle.matchId, id, name)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* STAGE 3: TOP 4 SEMI-FINALS (SEMI-QUARTILE) */}
-        {semiFinals.length > 0 && (adminBattleFilter === "ALL" || adminBattleFilter === "SF") && (
-          <div className="space-y-3">
-            <div className="bg-[#242424] border-2 border-white px-3.5 py-2 flex items-center justify-between shadow-[3px_3px_0px_0px_#ffffff] rounded-xl">
-              <span className="font-black text-xs uppercase tracking-widest text-white">
-                STAGE 3 &bull; TOP 4 SEMI-FINALS (SEMI-QUARTILE &bull; 2 MATCHES &bull; 1:30 MIN X 2 ROUNDS)
-              </span>
-              <span className="text-[10px] bg-black text-white px-2 py-0.5 border border-white rounded-md">
-                WINNERS ADVANCE TO GRAND FINAL
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-              {semiFinals.map((battle) => (
-                <AdminBattleCard
-                  key={battle.matchId}
-                  battle={battle}
-                  onPickWinner={(id, name) => handleSetBattleWinner(battle.matchId, id, name)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* STAGE 4: TOP 2 GRAND FINAL & 3RD PLACE BATTLE */}
-        {finalBattles.length > 0 && (adminBattleFilter === "ALL" || adminBattleFilter === "FINAL") && (
-          <div className="space-y-3">
-            <div className="bg-white text-black border-2 border-black px-3.5 py-2 flex items-center justify-between shadow-[3px_3px_0px_0px_#ffffff] rounded-xl">
-              <span className="font-black text-xs uppercase tracking-widest">
-                STAGE 4 &bull; TOP 2 GRAND FINAL & 3RD PLACE BATTLE
-              </span>
-              <span className="text-[10px] bg-black text-white px-2 py-0.5 font-black uppercase rounded-md">
-                CHAMPION CROWNED
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-              {finalBattles.map((battle) => (
-                <AdminBattleCard
-                  key={battle.matchId}
-                  battle={battle}
-                  isGrandFinal={battle.matchId.includes("FINAL") && !battle.matchId.includes("THIRD")}
-                  onPickWinner={(id, name) => handleSetBattleWinner(battle.matchId, id, name)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
 
-function AdminBattleCard({
+/**
+ * Admin Battle Card identical to PublicBattleCard but with integrated Pick Winner actions
+ */
+function AdminPublicStyleBattleCard({
   battle,
   isGrandFinal = false,
+  isSmallFinal = false,
   onPickWinner,
 }: {
   battle: BattleMatch;
   isGrandFinal?: boolean;
+  isSmallFinal?: boolean;
   onPickWinner: (id: number, name: string) => void;
 }) {
   const compA = battle.competitorA;
   const compB = battle.competitorB;
-  const hasWinner = Boolean(battle.winnerName);
+  const hasWinner = Boolean(battle.winnerId);
   const isAWinner = Boolean(hasWinner && battle.winnerId === compA?.id && compA?.id);
   const isBWinner = Boolean(hasWinner && battle.winnerId === compB?.id && compB?.id);
   const isALoser = Boolean(hasWinner && !isAWinner && compA);
@@ -894,8 +1067,8 @@ function AdminBattleCard({
     if (id === "QF4") return "Quarter-Final 4: Winner T16-4 vs T16-5";
     if (id === "SF1") return "Semi-Final 1: Winner QF1 vs QF4";
     if (id === "SF2") return "Semi-Final 2: Winner QF2 vs QF3";
-    if (id === "FINAL") return "Grand Final: Title Decider";
-    if (id === "THIRD_PLACE") return "3rd Place Battle";
+    if (id === "FINAL") return "Grand Final: Championship Title Match";
+    if (id === "THIRD_PLACE") return "Small Final: 3rd Place Battle (Bronze)";
     if (id === "RQF1") return "Regional QF 1: Seed #1 vs #8";
     if (id === "RQF2") return "Regional QF 2: Seed #2 vs #7";
     if (id === "RQF3") return "Regional QF 3: Seed #3 vs #6";
@@ -903,7 +1076,6 @@ function AdminBattleCard({
     if (id === "RSF1") return "Regional Semi-Final 1";
     if (id === "RSF2") return "Regional Semi-Final 2";
     if (id === "RFINAL") return "Regional Grand Final";
-    if (id === "RTHIRD_PLACE") return "Regional 3rd Place Battle";
     return battle.title || battle.matchId;
   };
 
@@ -917,7 +1089,7 @@ function AdminBattleCard({
     if (id === "SF2") return slot === "A" ? "Winner QF2" : "Winner QF3";
     if (id === "FINAL") return slot === "A" ? "Winner SF1" : "Winner SF2";
     if (id === "THIRD_PLACE") return slot === "A" ? "Runner-up SF1" : "Runner-up SF2";
-    return slot === "A" ? "Contender A (Seed)" : "Contender B (Seed)";
+    return slot === "A" ? "Contender A" : "Contender B";
   };
 
   return (
@@ -932,19 +1104,21 @@ function AdminBattleCard({
     >
       {/* Match Header */}
       <div className="flex items-center justify-between pb-3 mb-3 border-b border-neutral-700">
-        <span className="text-xs font-black uppercase text-white truncate pr-2 tracking-wide">
-          {getFullMatchTitle()}
-        </span>
-        <span className="text-[10px] bg-[#222222] border border-neutral-600 px-2.5 py-0.5 text-neutral-300 font-bold uppercase rounded-full shrink-0">
+        <div className="truncate pr-2">
+          <span className="text-xs font-black uppercase text-white truncate block tracking-wide">
+            {getFullMatchTitle()}
+          </span>
+        </div>
+        <span className="text-[10px] bg-[#222222] border border-neutral-600 text-neutral-300 font-bold px-2.5 py-0.5 rounded-full shrink-0">
           {battle.roundDurationText}
         </span>
       </div>
 
       {/* Head-to-Head (VS) Side-by-Side Contenders */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2.5 sm:gap-3">
-        {/* Competitor A */}
+        {/* Contender A */}
         <div
-          className={`border rounded-xl p-3 flex flex-col justify-between transition-all min-h-[82px] ${
+          className={`border rounded-xl p-3 flex flex-col justify-between min-h-[95px] transition-all ${
             isAWinner
               ? "bg-emerald-950/40 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_15px_rgba(52,211,153,0.15)] ring-1 ring-emerald-400/50"
               : isALoser
@@ -961,25 +1135,26 @@ function AdminBattleCard({
               </span>
               {isAWinner && (
                 <span className="bg-emerald-400 text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
-                  ✓ Winner
+                  <Crown className="w-2.5 h-2.5" /> Winner
                 </span>
               )}
             </div>
-            <div className={`text-xs sm:text-sm font-bold truncate ${isAWinner ? "text-emerald-300 font-black" : ""}`}>
+            <span className={`text-xs sm:text-sm font-bold truncate block ${isAWinner ? "text-emerald-300 font-black" : ""}`}>
               {compA?.name || getPlaceholder("A")}
-            </div>
+            </span>
           </div>
 
           {compA && (
             <button
+              type="button"
               onClick={() => onPickWinner(compA.id!, compA.name)}
-              className={`mt-3 w-full py-1.5 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all ${
+              className={`mt-2.5 w-full py-1.5 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all ${
                 isAWinner
                   ? "bg-emerald-500 text-black font-black"
-                  : "bg-white text-black hover:bg-neutral-200"
+                  : "bg-[#252525] border border-neutral-600 hover:bg-white hover:text-black text-white"
               }`}
             >
-              {isAWinner ? "✓ Confirmed Winner" : "Pick As Winner"}
+              {isAWinner ? "✓ Confirmed Winner" : "Pick Winner A"}
             </button>
           )}
         </div>
@@ -991,9 +1166,9 @@ function AdminBattleCard({
           </span>
         </div>
 
-        {/* Competitor B */}
+        {/* Contender B */}
         <div
-          className={`border rounded-xl p-3 flex flex-col justify-between transition-all min-h-[82px] ${
+          className={`border rounded-xl p-3 flex flex-col justify-between min-h-[95px] transition-all ${
             isBWinner
               ? "bg-emerald-950/40 border-2 border-emerald-400 text-emerald-100 shadow-[0_0_15px_rgba(52,211,153,0.15)] ring-1 ring-emerald-400/50"
               : isBLoser
@@ -1010,45 +1185,74 @@ function AdminBattleCard({
               </span>
               {isBWinner && (
                 <span className="bg-emerald-400 text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
-                  ✓ Winner
+                  <Crown className="w-2.5 h-2.5" /> Winner
                 </span>
               )}
             </div>
-            <div className={`text-xs sm:text-sm font-bold truncate ${isBWinner ? "text-emerald-300 font-black" : ""}`}>
+            <span className={`text-xs sm:text-sm font-bold truncate block ${isBWinner ? "text-emerald-300 font-black" : ""}`}>
               {compB?.name || getPlaceholder("B")}
-            </div>
+            </span>
           </div>
 
           {compB && (
             <button
+              type="button"
               onClick={() => onPickWinner(compB.id!, compB.name)}
-              className={`mt-3 w-full py-1.5 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all ${
+              className={`mt-2.5 w-full py-1.5 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all ${
                 isBWinner
                   ? "bg-emerald-500 text-black font-black"
-                  : "bg-white text-black hover:bg-neutral-200"
+                  : "bg-[#252525] border border-neutral-600 hover:bg-white hover:text-black text-white"
               }`}
             >
-              {isBWinner ? "✓ Confirmed Winner" : "Pick As Winner"}
+              {isBWinner ? "✓ Confirmed Winner" : "Pick Winner B"}
             </button>
           )}
         </div>
       </div>
 
-      {/* Judge Votes & Match Status Bar */}
-      <div className="mt-3 pt-2.5 border-t border-neutral-700 flex flex-col gap-1 text-[10px] text-neutral-400">
-        <div className="flex justify-between">
-          <span>Judge 1 Vote: <strong className="text-white">{battle.judge1Vote ? `Comp ${battle.judge1Vote}` : "None"}</strong></span>
-          <span>Judge 2 Vote: <strong className="text-white">{battle.judge2Vote ? `Comp ${battle.judge2Vote}` : "None"}</strong></span>
+      {/* Advancement & Judge Votes Footer */}
+      <div className="mt-3 pt-2.5 border-t border-neutral-700 flex flex-col gap-1.5 text-[11px]">
+        <div className="flex items-center justify-between text-[10px] text-neutral-400">
+          <span>
+            Judge 1: <strong className="text-white">{battle.judge1Vote ? `Comp ${battle.judge1Vote}` : "—"}</strong>
+          </span>
+          <span>
+            Judge 2: <strong className="text-white">{battle.judge2Vote ? `Comp ${battle.judge2Vote}` : "—"}</strong>
+          </span>
         </div>
 
-        {battle.winnerName && (
-          <div className="flex items-center justify-between text-emerald-400 font-bold mt-1">
-            <span>Winner: <strong className="text-white">{battle.winnerName}</strong></span>
+        {hasWinner ? (
+          <div className="flex items-center justify-between w-full pt-1">
+            <span className="text-emerald-400 font-bold flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
+              <span>
+                {isSmallFinal ? "3rd Place Winner: " : isGrandFinal ? "Champion: " : "Winner: "}
+                <strong className="text-white">{battle.winnerName}</strong>
+              </span>
+            </span>
+
             {battle.nextMatchId && (
-              <span className="text-neutral-400 text-[10px] font-normal">
-                Advances &rarr; <strong className="text-[#A78BFA]">{battle.nextMatchId}</strong>
+              <span className="text-neutral-400 text-[10px] font-medium flex items-center gap-1">
+                Advances to <strong className="text-[#A78BFA]">{battle.nextMatchId}</strong> <ArrowRight className="w-3 h-3" />
               </span>
             )}
+
+            {isGrandFinal && (
+              <span className="bg-[#FDE047] text-black font-black text-[9px] px-2 py-0.5 rounded uppercase">
+                🥇 HBC 2026 Champion
+              </span>
+            )}
+
+            {isSmallFinal && (
+              <span className="bg-[#f97316] text-black font-black text-[9px] px-2 py-0.5 rounded uppercase">
+                🥉 3rd Place Winner
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between w-full text-neutral-400 text-[10px] pt-1">
+            <span>{compA && compB ? "Ready for decision" : "Awaiting previous round"}</span>
+            <span className="uppercase font-mono text-neutral-500">{battle.matchId}</span>
           </div>
         )}
       </div>

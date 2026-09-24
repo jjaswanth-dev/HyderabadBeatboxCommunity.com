@@ -6,6 +6,8 @@ import crypto from "crypto";
 import {
   INITIAL_NATIONAL_BATTLES,
   INITIAL_REGIONAL_BATTLES,
+  DEFAULT_NATIONAL_PARTICIPANTS,
+  DEFAULT_REGIONAL_PARTICIPANTS,
 } from "@/lib/championshipDefaults";
 
 export async function GET(req: NextRequest) {
@@ -16,6 +18,20 @@ export async function GET(req: NextRequest) {
     if (!championship) {
       championship = await Championship.create({});
     }
+
+    // Auto-sync roster if database has previous schema/data
+    if (
+      championship.national?.participants?.[0]?.name !== "Parth" ||
+      championship.regional?.participants?.[0]?.name !== "Mespop" ||
+      championship.regional?.participants?.length !== DEFAULT_REGIONAL_PARTICIPANTS.length
+    ) {
+      championship.national.participants = DEFAULT_NATIONAL_PARTICIPANTS;
+      championship.regional.participants = DEFAULT_REGIONAL_PARTICIPANTS;
+      championship.markModified("national.participants");
+      championship.markModified("regional.participants");
+      await championship.save();
+    }
+
     return NextResponse.json(championship);
   } catch (error: any) {
     if (error.message && error.message.includes("Not authorized")) {
@@ -107,8 +123,34 @@ export async function POST(req: NextRequest) {
         };
       });
 
-      // Sort descending by total score
-      rankedList.sort((a: any, b: any) => b.total - a.total);
+      // Sort descending by total score with 3-tier deterministic tie-breaking:
+      // If both participants have 0 score (before scoring), preserve original roster order (a.id - b.id)
+      // Tier 1: Highest combined total score
+      // Tier 2: Highest individual peak judge score (max of J1 or J2)
+      // Tier 3: Alphabetical order of name (A to Z, character-by-character)
+      rankedList.sort((a: any, b: any) => {
+        if (b.total !== a.total) {
+          return b.total - a.total;
+        }
+        // If both are un-scored (0 points), preserve confirmed roster order
+        if ((a.total || 0) === 0 && (b.total || 0) === 0) {
+          return a.id - b.id;
+        }
+        // Tier 2: Highest peak judge score
+        const maxA = Math.max(a.j1Score || 0, a.j2Score || 0);
+        const maxB = Math.max(b.j1Score || 0, b.j2Score || 0);
+        if (maxB !== maxA) {
+          return maxB - maxA;
+        }
+        // Tier 3: Ascending alphabetical order by name
+        const nameComp = (a.name || "").localeCompare(b.name || "", undefined, {
+          sensitivity: "base",
+        });
+        if (nameComp !== 0) {
+          return nameComp;
+        }
+        return a.id - b.id;
+      });
 
       if (catKey === "national") {
         // Top 16 Seeding
@@ -241,16 +283,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // If this was a semi-final, auto-place the losing competitor into the 3rd place battle
-      if (currentMatch.matchId === "SF1" || currentMatch.matchId === "SF2" || currentMatch.matchId === "RSF1" || currentMatch.matchId === "RSF2") {
-        const thirdPlaceMatchId = currentMatch.matchId.startsWith("R") ? "RTHIRD_PLACE" : "THIRD_PLACE";
-        const thirdPlaceMatch = championship[catKey].battles.find(
-          (b: any) => b.matchId === thirdPlaceMatchId
+      // If this was a semi-final in national, auto-place the losing competitor into the small final (3rd place battle)
+      if (catKey === "national" && (currentMatch.matchId === "SF1" || currentMatch.matchId === "SF2")) {
+        const thirdPlaceMatch = championship.national.battles.find(
+          (b: any) => b.matchId === "THIRD_PLACE"
         );
         if (thirdPlaceMatch) {
           const losingComp = currentMatch.competitorA?.id === currentMatch.winnerId ? currentMatch.competitorB : currentMatch.competitorA;
           if (losingComp) {
-            if (currentMatch.matchId === "SF1" || currentMatch.matchId === "RSF1") {
+            if (currentMatch.matchId === "SF1") {
               thirdPlaceMatch.competitorA = losingComp;
             } else {
               thirdPlaceMatch.competitorB = losingComp;

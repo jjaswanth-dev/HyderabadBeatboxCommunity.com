@@ -22,30 +22,48 @@ export interface ParticipantItem {
   status: string;
 }
 
-export const DEFAULT_NATIONAL_PARTICIPANTS: ParticipantItem[] = DEFAULT_25_BEATBOXERS.map((b) => ({
-  id: b.id,
-  contenderNumber: `#${b.id.toString().padStart(2, "0")}`,
-  name: b.name,
-  status: "Active",
-}));
+export const DEFAULT_NATIONAL_PARTICIPANTS: ParticipantItem[] = [
+  { id: 1, contenderNumber: "#01", name: "Parth", status: "Active" },
+  { id: 2, contenderNumber: "#02", name: "LATHESH", status: "Active" },
+  { id: 3, contenderNumber: "#03", name: "NPX", status: "Active" },
+  { id: 4, contenderNumber: "#04", name: "sHz", status: "Active" },
+  { id: 5, contenderNumber: "#05", name: "MOHIT", status: "Active" },
+  { id: 6, contenderNumber: "#06", name: "Catalyst", status: "Active" },
+  { id: 7, contenderNumber: "#07", name: "V2_bbx", status: "Active" },
+  { id: 8, contenderNumber: "#08", name: "Piku", status: "Active" },
+  { id: 9, contenderNumber: "#09", name: "Pracheta", status: "Active" },
+  { id: 10, contenderNumber: "#10", name: "Drifter", status: "Active" },
+  { id: 11, contenderNumber: "#11", name: "Beatlord", status: "Active" },
+  { id: 12, contenderNumber: "#12", name: "Kawai senpai", status: "Active" },
+  { id: 13, contenderNumber: "#13", name: "Marvel", status: "Active" },
+  { id: 14, contenderNumber: "#14", name: "Ken-z", status: "Active" },
+  { id: 15, contenderNumber: "#15", name: "DITTO", status: "Active" },
+  { id: 16, contenderNumber: "#16", name: "Arth", status: "Active" },
+  { id: 17, contenderNumber: "#17", name: "Tej", status: "Active" },
+  { id: 18, contenderNumber: "#18", name: "Pranay", status: "Active" },
+  { id: 19, contenderNumber: "#19", name: "SphereFx", status: "Active" },
+  { id: 20, contenderNumber: "#20", name: "RDX", status: "Active" },
+  { id: 21, contenderNumber: "#21", name: "Demus", status: "Active" },
+  { id: 22, contenderNumber: "#22", name: "Xyren", status: "Active" },
+  { id: 23, contenderNumber: "#23", name: "Tazmanzane", status: "Active" },
+  { id: 24, contenderNumber: "#24", name: "Xboy", status: "Active" },
+  { id: 25, contenderNumber: "#25", name: "ROMEO", status: "Active" },
+];
 
 export const DEFAULT_REGIONAL_PARTICIPANTS: ParticipantItem[] = [
-  { id: 1, contenderNumber: "#01", name: "Contender 01", status: "Active" },
-  { id: 2, contenderNumber: "#02", name: "Contender 02", status: "Active" },
-  { id: 3, contenderNumber: "#03", name: "Contender 03", status: "Active" },
-  { id: 4, contenderNumber: "#04", name: "Contender 04", status: "Active" },
-  { id: 5, contenderNumber: "#05", name: "Contender 05", status: "Active" },
-  { id: 6, contenderNumber: "#06", name: "Contender 06", status: "Active" },
-  { id: 7, contenderNumber: "#07", name: "Contender 07", status: "Active" },
-  { id: 8, contenderNumber: "#08", name: "Contender 08", status: "Active" },
-  { id: 9, contenderNumber: "#09", name: "Contender 09", status: "Active" },
-  { id: 10, contenderNumber: "#10", name: "Contender 10", status: "Active" },
-  { id: 11, contenderNumber: "#11", name: "Contender 11", status: "Active" },
-  { id: 12, contenderNumber: "#12", name: "Contender 12", status: "Active" },
-  { id: 13, contenderNumber: "#13", name: "Contender 13", status: "Active" },
-  { id: 14, contenderNumber: "#14", name: "Contender 14", status: "Active" },
-  { id: 15, contenderNumber: "#15", name: "Contender 15", status: "Active" },
-  { id: 16, contenderNumber: "#16", name: "Contender 16", status: "Active" },
+  { id: 1, contenderNumber: "#01", name: "Mespop", status: "Active" },
+  { id: 2, contenderNumber: "#02", name: "Tej", status: "Active" },
+  { id: 3, contenderNumber: "#03", name: "Beatlord", status: "Active" },
+  { id: 4, contenderNumber: "#04", name: "UNOS", status: "Active" },
+  { id: 5, contenderNumber: "#05", name: "Nicholas Richard", status: "Active" },
+  { id: 6, contenderNumber: "#06", name: "Tomms Fx", status: "Active" },
+  { id: 7, contenderNumber: "#07", name: "Ken-Z", status: "Active" },
+  { id: 8, contenderNumber: "#08", name: "Pranay", status: "Active" },
+  { id: 9, contenderNumber: "#09", name: "Tazmanzane", status: "Active" },
+  { id: 10, contenderNumber: "#10", name: "Xboy", status: "Active" },
+  { id: 11, contenderNumber: "#11", name: "NPX", status: "Active" },
+  { id: 12, contenderNumber: "#12", name: "Xyren", status: "Active" },
+  { id: 13, contenderNumber: "#13", name: "Muzz", status: "Active" },
 ];
 
 export interface BattleCompetitor {
@@ -227,7 +245,7 @@ export const INITIAL_NATIONAL_BATTLES: BattleMatch[] = [
   },
   {
     matchId: "THIRD_PLACE",
-    title: "3rd Place Battle (Loser SF1 vs Loser SF2)",
+    title: "Small Final (3rd Place Battle - Loser SF1 vs Loser SF2)",
     roundStage: "FINAL",
     roundDurationText: "1:30 min x 2 rounds",
     competitorA: null,
@@ -298,18 +316,10 @@ export const INITIAL_REGIONAL_BATTLES: BattleMatch[] = [
     nextMatchId: "RFINAL",
     nextMatchSlot: "B",
   },
-  // Grand Final & 3rd Place
+  // Regional Grand Final (No Small Final for Regional)
   {
     matchId: "RFINAL",
     title: "Regional Grand Final (Winner RSF1 vs Winner RSF2)",
-    roundStage: "FINAL",
-    roundDurationText: "1:30 min x 2 rounds",
-    competitorA: null,
-    competitorB: null,
-  },
-  {
-    matchId: "RTHIRD_PLACE",
-    title: "Regional 3rd Place Battle (Loser RSF1 vs Loser RSF2)",
     roundStage: "FINAL",
     roundDurationText: "1:30 min x 2 rounds",
     competitorA: null,

@@ -28,7 +28,7 @@ export default function Header() {
           fetch("/api/draw-24"),
           fetch("/api/championship/public"),
         ]);
-        
+
         if (wildcardRes.status === "fulfilled") {
           const wData = await wildcardRes.value.json();
           if (wData && wData.isActive) setIsWildcardActive(true);
@@ -123,21 +123,20 @@ export default function Header() {
             <button
               key={section}
               onClick={() => scrollToSection(section)}
-              className={`nav-link ${
-                section === "championship"
-                  ? "animate-pulse-glow font-black text-emerald-400"
-                  : section === "draw-24"
-                  ? "animate-pulse-glow font-bold text-sky-400"
+              className={`nav-link ${section === "championship"
+                ? "animate-pulse-glow font-black text-emerald-400"
+                : section === "draw-24"
+                  ? "text-sky-400 font-normal"
                   : section === "wildcard"
-                  ? "animate-pulse-glow font-bold text-emerald-400"
-                  : ""
-              }`}
+                    ? "text-white"   //need to change it later coz it may become the color bug
+                    : ""
+                }`}
             >
               {section === "championship"
                 ? "LIVE CHAMPIONSHIP"
                 : section === "draw-24"
-                ? "WILDCARD WINNERS"
-                : section.toUpperCase()}
+                  ? "WILDCARD WINNERS"
+                  : section.toUpperCase()}
             </button>
           ))}
         </div>
@@ -163,21 +162,20 @@ export default function Header() {
                 <button
                   key={section}
                   onClick={() => scrollToSection(section)}
-                  className={`block w-full text-left px-4 py-2 nav-link ${
-                    section === "championship"
-                      ? "animate-pulse-glow font-black text-emerald-400"
-                      : section === "draw-24"
-                      ? "animate-pulse-glow font-bold text-sky-400"
+                  className={`block w-full text-left px-4 py-2 nav-link ${section === "championship"
+                    ? "animate-pulse-glow font-black text-emerald-400"
+                    : section === "draw-24"
+                      ? "text-sky-400 font-normal"
                       : section === "wildcard"
-                      ? "animate-pulse-glow font-bold text-emerald-400"
-                      : ""
-                  }`}
+                        ? "animate-pulse-glow font-bold text-emerald-400"
+                        : ""
+                    }`}
                 >
                   {section === "championship"
                     ? "LIVE CHAMPIONSHIP"
                     : section === "draw-24"
-                    ? "WILDCARD WINNERS"
-                    : section.toUpperCase()}
+                      ? "WILDCARD WINNERS"
+                      : section.toUpperCase()}
                 </button>
               ))}
             </div>

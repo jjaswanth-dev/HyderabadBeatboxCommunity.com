@@ -122,7 +122,29 @@ export default function ChampionshipPublicPage() {
       };
     });
 
-    list.sort((a, b) => b.combinedTotal - a.combinedTotal);
+    list.sort((a, b) => {
+      if (b.combinedTotal !== a.combinedTotal) {
+        return b.combinedTotal - a.combinedTotal;
+      }
+      // If both are un-scored (0 points), preserve confirmed roster order
+      if ((a.combinedTotal || 0) === 0 && (b.combinedTotal || 0) === 0) {
+        return a.id - b.id;
+      }
+      // Tier 2: Highest peak judge score
+      const maxA = Math.max(a.j1 || 0, a.j2 || 0);
+      const maxB = Math.max(b.j1 || 0, b.j2 || 0);
+      if (maxB !== maxA) {
+        return maxB - maxA;
+      }
+      // Tier 3: Ascending alphabetical order by name
+      const nameComp = (a.name || "").localeCompare(b.name || "", undefined, {
+        sensitivity: "base",
+      });
+      if (nameComp !== 0) {
+        return nameComp;
+      }
+      return a.id - b.id;
+    });
     return list;
   }, [participants, scores]);
 
@@ -208,7 +230,7 @@ export default function ChampionshipPublicPage() {
                   }`}
                 >
                   <Trophy className="w-3.5 h-3.5" />
-                  <span>Regional Division (16)</span>
+                  <span>Regional Division (13)</span>
                 </button>
               </div>
             </div>
@@ -556,14 +578,16 @@ export default function ChampionshipPublicPage() {
               </div>
             )}
 
-            {/* STAGE 4: FINALS & 3RD PLACE */}
+            {/* STAGE 4: FINALS & SMALL FINAL */}
             {finalBattles.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "FINAL") && (
               <div className="space-y-3">
                 <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
                   <div className="flex items-center gap-2.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] ring-2 ring-[#4ADE80]/30" />
                     <h3 className="text-sm font-black uppercase text-white tracking-wider">
-                      Stage 4: Grand Final & 3rd Place Battle
+                      {activeCategory === "national"
+                        ? "Stage 4: Grand Final & Small Final (3rd Place Battle)"
+                        : "Stage 4: Regional Grand Final"}
                     </h3>
                   </div>
                   <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
@@ -577,6 +601,7 @@ export default function ChampionshipPublicPage() {
                       key={battle.matchId}
                       battle={battle}
                       isGrandFinal={battle.matchId.includes("FINAL") && !battle.matchId.includes("THIRD")}
+                      isSmallFinal={battle.matchId.includes("THIRD")}
                     />
                   ))}
                 </div>
@@ -596,17 +621,15 @@ export default function ChampionshipPublicPage() {
 
 /**
  * Head-to-Head VS Battle Card with Soothing, Distinct Outline Borders
- * - Card outline: border-2 border-neutral-600/80 for clear differentiation from background
- * - Winner: highlighted with emerald border, subtle glow, and 👑 Winner badge
- * - Loser: dimmed with opacity-40 and subtle line-through
- * - Single advancement badge at bottom (no duplicate banners)
  */
 function PublicBattleCard({
   battle,
   isGrandFinal = false,
+  isSmallFinal = false,
 }: {
   battle: BattleMatch;
   isGrandFinal?: boolean;
+  isSmallFinal?: boolean;
 }) {
   const compA = battle.competitorA;
   const compB = battle.competitorB;
@@ -633,7 +656,7 @@ function PublicBattleCard({
     if (id === "SF1") return "Semi-Final 1: Winner QF1 vs QF4";
     if (id === "SF2") return "Semi-Final 2: Winner QF2 vs QF3";
     if (id === "FINAL") return "Grand Final: Championship Title Match";
-    if (id === "THIRD_PLACE") return "3rd Place Battle";
+    if (id === "THIRD_PLACE") return "Small Final: 3rd Place Battle (Bronze)";
     if (id === "RQF1") return "Regional QF 1: Seed #1 vs #8";
     if (id === "RQF2") return "Regional QF 2: Seed #2 vs #7";
     if (id === "RQF3") return "Regional QF 3: Seed #3 vs #6";
@@ -750,7 +773,10 @@ function PublicBattleCard({
           <div className="flex items-center justify-between w-full">
             <span className="text-emerald-400 font-bold flex items-center gap-1">
               <Check className="w-3.5 h-3.5 stroke-[3]" />
-              <span>Winner: <strong className="text-white">{battle.winnerName}</strong></span>
+              <span>
+                {isSmallFinal ? "3rd Place Winner: " : isGrandFinal ? "Champion: " : "Winner: "}
+                <strong className="text-white">{battle.winnerName}</strong>
+              </span>
             </span>
             {battle.nextMatchId && (
               <span className="text-neutral-400 text-[10px] font-medium flex items-center gap-1">
@@ -759,7 +785,12 @@ function PublicBattleCard({
             )}
             {isGrandFinal && (
               <span className="bg-[#FDE047] text-black font-black text-[9px] px-2 py-0.5 rounded uppercase">
-                HBC 2026 Champion
+                🥇 HBC 2026 Champion
+              </span>
+            )}
+            {isSmallFinal && (
+              <span className="bg-[#f97316] text-black font-black text-[9px] px-2 py-0.5 rounded uppercase">
+                🥉 3rd Place Winner
               </span>
             )}
           </div>

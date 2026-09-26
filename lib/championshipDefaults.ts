@@ -51,20 +51,21 @@ export const DEFAULT_NATIONAL_PARTICIPANTS: ParticipantItem[] = [
 ];
 
 export const DEFAULT_REGIONAL_PARTICIPANTS: ParticipantItem[] = [
-  { id: 1, contenderNumber: "#01", name: "Mespop", status: "Active" },
-  { id: 2, contenderNumber: "#02", name: "Tej", status: "Active" },
-  { id: 3, contenderNumber: "#03", name: "Beatlord", status: "Active" },
-  { id: 4, contenderNumber: "#04", name: "UNOS", status: "Active" },
-  { id: 5, contenderNumber: "#05", name: "Nicholas Richard", status: "Active" },
-  { id: 6, contenderNumber: "#06", name: "Tomms Fx", status: "Active" },
-  { id: 7, contenderNumber: "#07", name: "Ken-Z", status: "Active" },
-  { id: 8, contenderNumber: "#08", name: "Pranay", status: "Active" },
-  { id: 9, contenderNumber: "#09", name: "Tazmanzane", status: "Active" },
-  { id: 10, contenderNumber: "#10", name: "Xboy", status: "Active" },
-  { id: 11, contenderNumber: "#11", name: "NPX", status: "Active" },
-  { id: 12, contenderNumber: "#12", name: "Xyren", status: "Active" },
-  { id: 13, contenderNumber: "#13", name: "Muzz", status: "Active" },
+  { id: 1, contenderNumber: "#01", name: "Pranay", status: "Active" },
+  { id: 2, contenderNumber: "#02", name: "Ken-Z", status: "Active" },
+  { id: 3, contenderNumber: "#03", name: "Nicholas Richard", status: "Active" },
+  { id: 4, contenderNumber: "#04", name: "Beatlord", status: "Active" },
+  { id: 5, contenderNumber: "#05", name: "Muzz", status: "Active" },
+  { id: 6, contenderNumber: "#06", name: "Tej", status: "Active" },
+  { id: 7, contenderNumber: "#07", name: "UNOS", status: "Active" },
+  { id: 8, contenderNumber: "#08", name: "Tomms Fx", status: "Active" },
+  { id: 9, contenderNumber: "#09", name: "NPX", status: "Active" },
+  { id: 10, contenderNumber: "#10", name: "Xboy", status: "Active" },   // fixed at #10
+  { id: 11, contenderNumber: "#11", name: "Xyren", status: "Active" },
+  { id: 12, contenderNumber: "#12", name: "Tazmanzane", status: "Active" },
+  { id: 13, contenderNumber: "#13", name: "Lil Holmes", status: "Active" }, // always last
 ];
+
 
 export interface BattleCompetitor {
   id?: number;

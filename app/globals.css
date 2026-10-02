@@ -115,13 +115,19 @@ body::-webkit-scrollbar {
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    height: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    height: 6px;
+    width: 6px;
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #0066FF;
-    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.28);
   }
 }
 

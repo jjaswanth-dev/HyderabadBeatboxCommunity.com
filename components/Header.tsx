@@ -9,8 +9,10 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWildcardActive, setIsWildcardActive] = useState(false);
-  const [isDraw24Active, setIsDraw24Active] = useState(true);
-  const [isChampionshipActive, setIsChampionshipActive] = useState(true);
+  const [isDraw24Active, setIsDraw24Active] = useState(false);
+  const [isChampionshipActive, setIsChampionshipActive] = useState(false);
+  const [championshipNavLabel, setChampionshipNavLabel] = useState("CHAMPIONSHIP RESULTS 2026");
+  const [championshipEventStatus, setChampionshipEventStatus] = useState<"live" | "results">("results");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,24 +26,26 @@ export default function Header() {
     const checkStatus = async () => {
       try {
         const [wildcardRes, draw24Res, champRes] = await Promise.allSettled([
-          fetch("/api/wildcard"),
-          fetch("/api/draw-24"),
-          fetch("/api/championship/public"),
+          fetch("/api/wildcard", { cache: "no-store" }),
+          fetch("/api/draw-24", { cache: "no-store" }),
+          fetch("/api/championship/public", { cache: "no-store" }),
         ]);
 
-        if (wildcardRes.status === "fulfilled") {
+        if (wildcardRes.status === "fulfilled" && wildcardRes.value.ok) {
           const wData = await wildcardRes.value.json();
-          if (wData && wData.isActive) setIsWildcardActive(true);
+          setIsWildcardActive(Boolean(wData && wData.isActive));
         }
 
-        if (draw24Res.status === "fulfilled") {
+        if (draw24Res.status === "fulfilled" && draw24Res.value.ok) {
           const dData = await draw24Res.value.json();
-          if (dData && dData.isActive) setIsDraw24Active(true);
+          setIsDraw24Active(Boolean(dData && dData.isActive));
         }
 
-        if (champRes.status === "fulfilled") {
+        if (champRes.status === "fulfilled" && champRes.value.ok) {
           const cData = await champRes.value.json();
-          if (cData && cData.isActive) setIsChampionshipActive(true);
+          setIsChampionshipActive(Boolean(cData && cData.isActive));
+          if (cData.navLabel) setChampionshipNavLabel(cData.navLabel);
+          if (cData.eventStatus) setChampionshipEventStatus(cData.eventStatus);
         }
       } catch (err) {
         console.error("Failed to check feature statuses", err);
@@ -124,16 +128,18 @@ export default function Header() {
               key={section}
               onClick={() => scrollToSection(section)}
               className={`nav-link ${section === "championship"
-                ? "animate-pulse-glow font-black text-emerald-400"
+                ? championshipEventStatus === "live"
+                  ? "animate-pulse-glow font-black text-emerald-400"
+                  : "font-black text-[#FDE047] hover:text-white"
                 : section === "draw-24"
                   ? "text-sky-400 font-normal"
                   : section === "wildcard"
-                    ? "text-white"   //need to change it later coz it may become the color bug
+                    ? "text-white"
                     : ""
                 }`}
             >
               {section === "championship"
-                ? "LIVE CHAMPIONSHIP"
+                ? championshipNavLabel
                 : section === "draw-24"
                   ? "WILDCARD WINNERS"
                   : section.toUpperCase()}
@@ -163,7 +169,9 @@ export default function Header() {
                   key={section}
                   onClick={() => scrollToSection(section)}
                   className={`block w-full text-left px-4 py-2 nav-link ${section === "championship"
-                    ? "animate-pulse-glow font-black text-emerald-400"
+                    ? championshipEventStatus === "live"
+                      ? "animate-pulse-glow font-black text-emerald-400"
+                      : "font-black text-[#FDE047] hover:text-white"
                     : section === "draw-24"
                       ? "text-sky-400 font-normal"
                       : section === "wildcard"
@@ -172,7 +180,7 @@ export default function Header() {
                     }`}
                 >
                   {section === "championship"
-                    ? "LIVE CHAMPIONSHIP"
+                    ? championshipNavLabel
                     : section === "draw-24"
                       ? "WILDCARD WINNERS"
                       : section.toUpperCase()}

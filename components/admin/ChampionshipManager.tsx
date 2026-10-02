@@ -18,6 +18,7 @@ import {
   RotateCcw,
   Trash2,
   ArrowRight,
+  Plus,
 } from "lucide-react";
 
 interface Judge {
@@ -71,12 +72,15 @@ export default function ChampionshipManager() {
   const [isActive, setIsActive] = useState(true);
   const [title, setTitle] = useState("Hyderabad Beatbox Championship 2026");
   const [activeStage, setActiveStage] = useState<"eliminations" | "battles" | "both">("both");
+  const [eventStatus, setEventStatus] = useState<"live" | "results">("results");
+  const [navLabel, setNavLabel] = useState("CHAMPIONSHIP RESULTS 2026");
   const [judges, setJudges] = useState<Judge[]>([]);
 
   const [activeCategory, setActiveCategory] = useState<"national" | "regional">("national");
-  const [activeView, setActiveView] = useState<"eliminations" | "battles">("eliminations");
+  const [activeView, setActiveView] = useState<"eliminations" | "battles" | "participants">("eliminations");
   const [adminBattleFilter, setAdminBattleFilter] = useState<"ALL" | "T16" | "QF" | "SF" | "FINAL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [participantSearch, setParticipantSearch] = useState("");
 
   const [national, setNational] = useState<{
     participants: Participant[];
@@ -116,6 +120,8 @@ export default function ChampionshipManager() {
       setIsActive(data.isActive !== undefined ? data.isActive : true);
       setTitle(data.title || "Hyderabad Beatbox Championship 2026");
       setActiveStage(data.activeStage || "both");
+      setEventStatus(data.eventStatus || "results");
+      setNavLabel(data.navLabel || (data.eventStatus === "live" ? "LIVE CHAMPIONSHIP" : "CHAMPIONSHIP RESULTS 2026"));
       setJudges(data.judges || []);
       setNational({
         participants: data.national?.participants || [],
@@ -153,11 +159,104 @@ export default function ChampionshipManager() {
           isActive,
           title,
           activeStage,
+          eventStatus,
+          navLabel,
         }),
       });
 
       if (!res.ok) throw new Error("Failed to save settings");
       setFeedback({ type: "success", text: "Championship settings saved successfully!" });
+    } catch (err: any) {
+      setFeedback({ type: "error", text: err.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddParticipant = () => {
+    const list = activeCategory === "national" ? national.participants : regional.participants;
+    const nextId = list.length > 0 ? Math.max(...list.map((p) => p.id)) + 1 : 1;
+    const nextNumber = `#${String(nextId).padStart(2, "0")}`;
+    const newParticipant: Participant = {
+      id: nextId,
+      contenderNumber: nextNumber,
+      name: "",
+      status: "Active",
+    };
+
+    if (activeCategory === "national") {
+      setNational((prev) => ({
+        ...prev,
+        participants: [...prev.participants, newParticipant],
+      }));
+    } else {
+      setRegional((prev) => ({
+        ...prev,
+        participants: [...prev.participants, newParticipant],
+      }));
+    }
+  };
+
+  const handleUpdateParticipant = (index: number, field: keyof Participant, value: any) => {
+    if (activeCategory === "national") {
+      setNational((prev) => {
+        const updated = [...prev.participants];
+        updated[index] = { ...updated[index], [field]: value };
+        return { ...prev, participants: updated };
+      });
+    } else {
+      setRegional((prev) => {
+        const updated = [...prev.participants];
+        updated[index] = { ...updated[index], [field]: value };
+        return { ...prev, participants: updated };
+      });
+    }
+  };
+
+  const handleRemoveParticipant = (index: number) => {
+    const list = activeCategory === "national" ? national.participants : regional.participants;
+    const target = list[index];
+    if (!target) return;
+    if (!confirm(`Are you sure you want to remove "${target.name || target.contenderNumber}" from ${activeCategory.toUpperCase()} division?`)) {
+      return;
+    }
+
+    if (activeCategory === "national") {
+      setNational((prev) => ({
+        ...prev,
+        participants: prev.participants.filter((_, i) => i !== index),
+      }));
+    } else {
+      setRegional((prev) => ({
+        ...prev,
+        participants: prev.participants.filter((_, i) => i !== index),
+      }));
+    }
+  };
+
+  const handleSaveParticipants = async () => {
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const participants = activeCategory === "national" ? national.participants : regional.participants;
+      const res = await fetch("/api/championship/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAdminToken()}`,
+        },
+        body: JSON.stringify({
+          action: "update_participants",
+          category: activeCategory,
+          participants,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save participants");
+      setFeedback({
+        type: "success",
+        text: `✓ ${activeCategory.toUpperCase()} contenders saved successfully! Live scoreboard and judge scorecards are updated.`,
+      });
     } catch (err: any) {
       setFeedback({ type: "error", text: err.message });
     } finally {
@@ -382,6 +481,17 @@ export default function ChampionshipManager() {
     );
   }, [rankedContenders, searchQuery]);
 
+  const filteredParticipants = useMemo(() => {
+    if (!participantSearch.trim()) return currentParticipants;
+    const q = participantSearch.toLowerCase();
+    return currentParticipants.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.contenderNumber.toLowerCase().includes(q) ||
+        (p.status && p.status.toLowerCase().includes(q))
+    );
+  }, [currentParticipants, participantSearch]);
+
   const qualifierThreshold = activeCategory === "national" ? 16 : 8;
   const judge1Name = judges.find((j) => j.id === "judge-1")?.name || "Nabinbe";
   const judge2Name = judges.find((j) => j.id === "judge-2")?.name || "Kevin";
@@ -450,7 +560,7 @@ export default function ChampionshipManager() {
                 }`}
               >
                 <Trophy className="w-3.5 h-3.5" />
-                <span>National Division (25)</span>
+                <span>National Division ({national.participants.length})</span>
               </button>
               <button
                 type="button"
@@ -462,40 +572,52 @@ export default function ChampionshipManager() {
                 }`}
               >
                 <Trophy className="w-3.5 h-3.5" />
-                <span>Regional Division (13)</span>
+                <span>Regional Division ({regional.participants.length})</span>
               </button>
             </div>
           </div>
 
-          {/* View Phase Switcher */}
+          {/* View Mode Switcher */}
           <div>
             <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block mb-1.5">
               Admin View Mode
             </span>
-            <div className="bg-[#0e0e0e] p-1 rounded-xl border border-neutral-800 flex">
+            <div className="bg-[#0e0e0e] p-1 rounded-xl border border-neutral-800 flex gap-1">
               <button
                 type="button"
                 onClick={() => setActiveView("eliminations")}
-                className={`flex-1 py-2 px-3 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2 px-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                   activeView === "eliminations"
                     ? "bg-[#38BDF8] text-black shadow-md"
                     : "text-neutral-400 hover:text-white"
                 }`}
               >
                 <Flame className="w-3.5 h-3.5" />
-                <span>Elimination Scoreboard</span>
+                <span>Eliminations</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveView("battles")}
-                className={`flex-1 py-2 px-3 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2 px-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                   activeView === "battles"
                     ? "bg-[#A78BFA] text-black shadow-md"
                     : "text-neutral-400 hover:text-white"
                 }`}
               >
                 <Swords className="w-3.5 h-3.5" />
-                <span>Battle Bracket Controller</span>
+                <span>Battles</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("participants")}
+                className={`flex-1 py-2 px-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  activeView === "participants"
+                    ? "bg-emerald-400 text-black shadow-md"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Contenders ({currentParticipants.length})</span>
               </button>
             </div>
           </div>
@@ -560,15 +682,15 @@ export default function ChampionshipManager() {
       {/* Public Hub Settings Card */}
       <div className="bg-[#151515] border border-neutral-800 p-5 rounded-2xl shadow-xl space-y-4">
         <h3 className="text-xs uppercase tracking-widest font-black text-white pb-2 border-b border-neutral-800 flex items-center gap-2">
-          Public Website Visibility Settings
+          Public Website Visibility & Status Settings
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#101010] border border-neutral-800 p-3.5 flex items-center justify-between rounded-xl">
             <div>
-              <div className="text-xs font-bold text-white">Championship Hub Active</div>
+              <div className="text-xs font-bold text-white">Championship Active</div>
               <div className="text-[11px] text-neutral-400">
-                Show &apos;/championship&apos; page & header nav
+                Show &apos;/championship&apos; & nav link
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -583,15 +705,35 @@ export default function ChampionshipManager() {
           </div>
 
           <div className="bg-[#101010] border border-neutral-800 p-3.5 rounded-xl">
+            <div className="text-xs font-bold text-white mb-1">Event Status Mode</div>
+            <select
+              value={eventStatus}
+              onChange={(e: any) => {
+                const newStatus = e.target.value;
+                setEventStatus(newStatus);
+                if (newStatus === "live" && navLabel === "CHAMPIONSHIP RESULTS 2026") {
+                  setNavLabel("LIVE CHAMPIONSHIP");
+                } else if (newStatus === "results" && navLabel === "LIVE CHAMPIONSHIP") {
+                  setNavLabel("CHAMPIONSHIP RESULTS 2026");
+                }
+              }}
+              className="w-full bg-[#161616] border border-neutral-700 p-2 text-xs text-white font-medium rounded-lg focus:outline-none focus:border-white"
+            >
+              <option value="results">🏆 Championship Over (Results)</option>
+              <option value="live">🔴 Live Event (In Progress)</option>
+            </select>
+          </div>
+
+          <div className="bg-[#101010] border border-neutral-800 p-3.5 rounded-xl">
             <div className="text-xs font-bold text-white mb-1">Public Stage Visibility</div>
             <select
               value={activeStage}
               onChange={(e: any) => setActiveStage(e.target.value)}
               className="w-full bg-[#161616] border border-neutral-700 p-2 text-xs text-white font-medium rounded-lg focus:outline-none focus:border-white"
             >
+              <option value="both">Both Leaderboard & Battles</option>
               <option value="eliminations">Elimination Leaderboard Only</option>
               <option value="battles">Battle Brackets Only</option>
-              <option value="both">Both Leaderboard & Battles</option>
             </select>
           </div>
 
@@ -602,8 +744,58 @@ export default function ChampionshipManager() {
               disabled={saving}
               className="w-full py-2.5 bg-white text-black hover:bg-neutral-200 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
             >
-              <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Public Settings"}
+              <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Visibility Settings"}
             </button>
+          </div>
+        </div>
+
+        {/* Title and Navbar Link Customization Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          <div className="bg-[#101010] border border-neutral-800 p-3.5 rounded-xl space-y-1.5">
+            <div className="text-xs font-bold text-white">Championship Title</div>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Hyderabad Beatbox Championship 2026"
+              className="w-full bg-[#161616] border border-neutral-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:border-white"
+            />
+            <div className="text-[10px] text-neutral-400">
+              Displayed as main header across public championship page and admin controller.
+            </div>
+          </div>
+
+          <div className="bg-[#101010] border border-neutral-800 p-3.5 rounded-xl space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-white">Header Nav Link Text</div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setNavLabel("CHAMPIONSHIP RESULTS 2026")}
+                  className="text-[10px] text-neutral-400 hover:text-[#FDE047] underline cursor-pointer"
+                >
+                  Results Preset
+                </button>
+                <span className="text-neutral-600">&bull;</span>
+                <button
+                  type="button"
+                  onClick={() => setNavLabel("LIVE CHAMPIONSHIP")}
+                  className="text-[10px] text-neutral-400 hover:text-emerald-400 underline cursor-pointer"
+                >
+                  Live Preset
+                </button>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={navLabel}
+              onChange={(e) => setNavLabel(e.target.value)}
+              placeholder="e.g. CHAMPIONSHIP RESULTS OF 2026"
+              className="w-full bg-[#161616] border border-neutral-700 px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:border-white font-mono font-bold"
+            />
+            <div className="text-[10px] text-neutral-400">
+              Controls exact text shown in website header (e.g. &quot;CHAMPIONSHIP RESULTS 2026&quot;).
+            </div>
           </div>
         </div>
       </div>
@@ -694,8 +886,146 @@ export default function ChampionshipManager() {
         </div>
       </div>
 
-      {/* Main View Area: Elimination Leaderboard or Battle Brackets */}
-      {activeView === "eliminations" ? (
+      {/* Main View Area: Contenders Roster, Elimination Leaderboard, or Battle Brackets */}
+      {activeView === "participants" ? (
+        /* PARTICIPANT / CONTENDER ROSTER MANAGER */
+        <div className="space-y-4">
+          <div className="bg-[#151515] border border-neutral-800 p-4 sm:p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-xl">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  <Users className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-black uppercase text-white tracking-wide">
+                    Manage {activeCategory === "national" ? "National" : "Regional"} Contenders ({currentParticipants.length})
+                  </h3>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Add, edit, or remove beatboxers for this category. Click &quot;Save Contenders&quot; to apply changes to the live scoreboard and judge scorecards.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleAddParticipant}
+                className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 shadow-md active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[3]" /> Add Contender
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveParticipants}
+                disabled={saving}
+                className="px-4 py-2 bg-white hover:bg-neutral-200 text-black text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" /> {saving ? "Saving..." : "Save Contenders"}
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="bg-[#151515] border border-neutral-800 p-3 sm:p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs text-neutral-400 font-medium">
+              Showing <strong className="text-white">{filteredParticipants.length}</strong> of{" "}
+              <strong className="text-white">{currentParticipants.length}</strong> contenders
+            </span>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search contender in roster..."
+                value={participantSearch}
+                onChange={(e) => setParticipantSearch(e.target.value)}
+                className="w-full bg-[#0d0d0d] border border-neutral-700 pl-9 pr-3 py-1.5 text-xs text-white placeholder-neutral-500 rounded-lg focus:outline-none focus:border-white transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Roster Table */}
+          <div className="border border-neutral-800 bg-[#141414] overflow-hidden rounded-2xl shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-[#1c1c1c] text-neutral-300 font-bold text-[11px] uppercase tracking-wider border-b border-neutral-800">
+                  <tr>
+                    <th className="py-3 px-4 w-16">ID</th>
+                    <th className="py-3 px-4 w-28">Contender #</th>
+                    <th className="py-3 px-4">Beatboxer / Artist Name</th>
+                    <th className="py-3 px-4 w-36">Status</th>
+                    <th className="py-3 px-4 text-right w-24">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800/80">
+                  {filteredParticipants.map((p, index) => {
+                    const actualIdx = currentParticipants.findIndex((item) => item.id === p.id);
+                    return (
+                      <tr key={p.id || index} className="hover:bg-neutral-800/30 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-neutral-500 text-xs">
+                          #{p.id}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <input
+                            type="text"
+                            value={p.contenderNumber}
+                            onChange={(e) => handleUpdateParticipant(actualIdx, "contenderNumber", e.target.value)}
+                            placeholder="#01"
+                            className="w-20 bg-[#0d0d0d] border border-neutral-700 rounded-lg px-2.5 py-1.5 font-mono font-bold text-xs text-[#38BDF8] focus:outline-none focus:border-[#38BDF8]"
+                          />
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <input
+                            type="text"
+                            value={p.name}
+                            onChange={(e) => handleUpdateParticipant(actualIdx, "name", e.target.value)}
+                            placeholder="Artist / Contender Name"
+                            className="w-full max-w-sm bg-[#0d0d0d] border border-neutral-700 rounded-lg px-3 py-1.5 font-bold text-sm text-white focus:outline-none focus:border-white"
+                          />
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <select
+                            value={p.status || "Active"}
+                            onChange={(e) => handleUpdateParticipant(actualIdx, "status", e.target.value)}
+                            className="bg-[#0d0d0d] border border-neutral-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-neutral-200 focus:outline-none focus:border-white"
+                          >
+                            <option value="Active">Active</option>
+                            <option value="Qualified">Qualified</option>
+                            <option value="Withdrawn">Withdrawn</option>
+                            <option value="Eliminated">Eliminated</option>
+                          </select>
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveParticipant(actualIdx)}
+                            className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            title="Remove Contender"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredParticipants.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-neutral-400">
+                        No contenders found. Click &quot;Add Contender&quot; above to add one.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : activeView === "eliminations" ? (
         /* ELIMINATION LEADERBOARD (MATCHING PUBLIC UI) */
         <div className="space-y-4">
           <div className="bg-[#151515] border border-neutral-800 p-3.5 sm:p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-3">
@@ -736,7 +1066,11 @@ export default function ChampionshipManager() {
                 <tbody className="divide-y divide-neutral-800/80">
                   {filteredRankings.map((contender, index) => {
                     const rank = index + 1;
-                    const isTopQualified = rank <= qualifierThreshold && contender.combinedTotal > 0;
+                    const isWithdrawn = contender.status === "Withdrawn" || contender.status === "Emergency Exit";
+                    const isTopQualified =
+                      !isWithdrawn &&
+                      (rank <= qualifierThreshold || contender.status === "Qualified") &&
+                      contender.combinedTotal > 0;
                     const showCutoffLineAfter =
                       rank === qualifierThreshold && filteredRankings.length > qualifierThreshold;
 
@@ -746,6 +1080,8 @@ export default function ChampionshipManager() {
                           className={`transition-colors ${
                             isTopQualified
                               ? "bg-emerald-950/15 hover:bg-emerald-950/30"
+                              : isWithdrawn
+                              ? "bg-amber-950/10 hover:bg-amber-950/20"
                               : "hover:bg-neutral-800/30"
                           }`}
                         >
@@ -765,6 +1101,10 @@ export default function ChampionshipManager() {
                               </span>
                             ) : isTopQualified ? (
                               <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold">
+                                #{rank}
+                              </span>
+                            ) : isWithdrawn ? (
+                              <span className="bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded-md font-bold">
                                 #{rank}
                               </span>
                             ) : (
@@ -799,7 +1139,11 @@ export default function ChampionshipManager() {
                           </td>
 
                           <td className="py-3 px-4 text-right">
-                            {isTopQualified ? (
+                            {isWithdrawn ? (
+                              <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
+                                Withdrawn (Emergency)
+                              </span>
+                            ) : isTopQualified ? (
                               <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
                                 <Check className="w-3 h-3 stroke-[3]" /> Top {qualifierThreshold} Qualified
                               </span>

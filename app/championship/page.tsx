@@ -12,8 +12,11 @@ import {
   ChevronRight,
   ArrowRight,
   RefreshCw,
+  GitFork,
+  LayoutGrid,
 } from "lucide-react";
 import Header from "@/components/Header";
+import TournamentBracketTree from "@/components/TournamentBracketTree";
 
 interface Participant {
   id: number;
@@ -57,6 +60,7 @@ export default function ChampionshipPublicPage() {
   const [activeCategory, setActiveCategory] = useState<"national" | "regional">("national");
   const [activeView, setActiveView] = useState<"eliminations" | "battles">("eliminations");
   const [bracketRoundFilter, setBracketRoundFilter] = useState<"ALL" | "T16" | "QF" | "SF" | "FINAL">("ALL");
+  const [battleViewMode, setBattleViewMode] = useState<"tree" | "cards">("tree");
 
   const fetchData = async (isManual = false) => {
     try {
@@ -178,9 +182,15 @@ export default function ChampionshipPublicPage() {
           {/* Header Row */}
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-neutral-800">
             <div className="flex items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 bg-[#FDE047] text-black font-extrabold text-[11px] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                <Radio className="w-3.5 h-3.5 animate-pulse text-red-600" /> LIVE
-              </span>
+              {data?.eventStatus === "live" ? (
+                <span className="inline-flex items-center gap-1.5 bg-[#FDE047] text-black font-extrabold text-[11px] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                  <Radio className="w-3.5 h-3.5 animate-pulse text-red-600" /> LIVE
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 bg-[#FDE047] text-black font-extrabold text-[11px] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                  <Trophy className="w-3.5 h-3.5 text-black" /> OFFICIAL RESULTS
+                </span>
+              )}
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase">
                 {data?.title || "HBC 2026 Championship"}
               </h1>
@@ -263,7 +273,7 @@ export default function ChampionshipPublicPage() {
                   }`}
                 >
                   <Swords className="w-3.5 h-3.5" />
-                  <span>Battle Brackets</span>
+                  <span>Battle Tree & Brackets</span>
                 </button>
               </div>
             </div>
@@ -333,7 +343,11 @@ export default function ChampionshipPublicPage() {
                   <tbody className="divide-y divide-neutral-800/80">
                     {filteredRankings.map((contender, index) => {
                       const rank = index + 1;
-                      const isTopQualified = rank <= qualifierCutoff && contender.combinedTotal > 0;
+                      const isWithdrawn = contender.status === "Withdrawn" || contender.status === "Emergency Exit";
+                      const isTopQualified =
+                        !isWithdrawn &&
+                        (rank <= qualifierCutoff || contender.status === "Qualified") &&
+                        contender.combinedTotal > 0;
                       const showCutoffLineAfter = rank === qualifierCutoff && filteredRankings.length > qualifierCutoff;
 
                       return (
@@ -342,6 +356,8 @@ export default function ChampionshipPublicPage() {
                             className={`transition-colors ${
                               isTopQualified
                                 ? "bg-emerald-950/15 hover:bg-emerald-950/30"
+                                : isWithdrawn
+                                ? "bg-amber-950/10 hover:bg-amber-950/20"
                                 : "hover:bg-neutral-800/30"
                             }`}
                           >
@@ -361,6 +377,10 @@ export default function ChampionshipPublicPage() {
                                 </span>
                               ) : isTopQualified ? (
                                 <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold">
+                                  #{rank}
+                                </span>
+                              ) : isWithdrawn ? (
+                                <span className="bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded-md font-bold">
                                   #{rank}
                                 </span>
                               ) : (
@@ -401,7 +421,11 @@ export default function ChampionshipPublicPage() {
 
                             {/* Status */}
                             <td className="py-3 px-4 text-right">
-                              {isTopQualified ? (
+                              {isWithdrawn ? (
+                                <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
+                                  Withdrawn (Emergency)
+                                </span>
+                              ) : isTopQualified ? (
                                 <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
                                   <Check className="w-3 h-3 stroke-[3]" /> Top {qualifierCutoff} Qualified
                                 </span>
@@ -441,8 +465,8 @@ export default function ChampionshipPublicPage() {
         ) : (
           /* BATTLE TOURNAMENT BRACKETS */
           <div className="space-y-6">
-            {/* Stage Filter Tabs */}
-            <div className="bg-[#151515] border border-neutral-800 p-3 sm:p-4 rounded-xl flex flex-wrap items-center justify-between gap-3">
+            {/* Top Battles Header & View Mode Switcher */}
+            <div className="bg-[#151515] border border-neutral-800 p-3.5 sm:p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 shadow-md">
               <div>
                 <h2 className="text-sm font-black uppercase text-white tracking-wide flex items-center gap-2">
                   <Swords className="w-4 h-4 text-[#A78BFA]" />
@@ -451,162 +475,205 @@ export default function ChampionshipPublicPage() {
                     : "Regional Championship Battles"}
                 </h2>
                 <span className="text-xs text-neutral-400">
-                  Head-to-head knockout matches with verified winner advancement.
+                  Knockout tournament progression with verified winner advancement.
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 text-xs font-bold">
+              {/* View Switcher: Authentic Battle Tree vs Match Cards */}
+              <div className="flex items-center gap-1.5 bg-[#0e0e0e] p-1 rounded-xl border border-neutral-800">
                 <button
-                  onClick={() => setBracketRoundFilter("ALL")}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    bracketRoundFilter === "ALL"
-                      ? "bg-white text-black font-black"
-                      : "bg-[#202020] text-neutral-300 hover:text-white"
+                  type="button"
+                  onClick={() => setBattleViewMode("tree")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+                    battleViewMode === "tree"
+                      ? "bg-[#EAFF00] text-black shadow-md"
+                      : "text-neutral-400 hover:text-white"
                   }`}
                 >
-                  All Matches
-                </button>
-                {top16Battles.length > 0 && (
-                  <button
-                    onClick={() => setBracketRoundFilter("T16")}
-                    className={`px-3 py-1.5 rounded-lg transition-all ${
-                      bracketRoundFilter === "T16"
-                        ? "bg-[#38BDF8] text-black font-black"
-                        : "bg-[#202020] text-neutral-300 hover:text-white"
-                    }`}
-                  >
-                    Top 16
-                  </button>
-                )}
-                <button
-                  onClick={() => setBracketRoundFilter("QF")}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    bracketRoundFilter === "QF"
-                      ? "bg-[#FDE047] text-black font-black"
-                      : "bg-[#202020] text-neutral-300 hover:text-white"
-                  }`}
-                >
-                  Top 8 (QF)
+                  <GitFork className="w-3.5 h-3.5" />
+                  <span>Battle Tree</span>
                 </button>
                 <button
-                  onClick={() => setBracketRoundFilter("SF")}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    bracketRoundFilter === "SF"
-                      ? "bg-[#FB7185] text-black font-black"
-                      : "bg-[#202020] text-neutral-300 hover:text-white"
+                  type="button"
+                  onClick={() => setBattleViewMode("cards")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+                    battleViewMode === "cards"
+                      ? "bg-white text-black shadow-md"
+                      : "text-neutral-400 hover:text-white"
                   }`}
                 >
-                  Top 4 (SF)
-                </button>
-                <button
-                  onClick={() => setBracketRoundFilter("FINAL")}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    bracketRoundFilter === "FINAL"
-                      ? "bg-[#4ADE80] text-black font-black"
-                      : "bg-[#202020] text-neutral-300 hover:text-white"
-                  }`}
-                >
-                  Finals
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>Match Cards</span>
                 </button>
               </div>
             </div>
 
-            {/* STAGE 1: TOP 16 */}
-            {top16Battles.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "T16") && (
-              <div className="space-y-3">
-                <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8] ring-2 ring-[#38BDF8]/30" />
-                    <h3 className="text-sm font-black uppercase text-white tracking-wider">
-                      Stage 1: Top 16 Battles
-                    </h3>
-                  </div>
-                  <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
-                    8 Matches &bull; 1 min × 2 rounds &bull; Winners Advance to Top 8
+            {/* VIEW MODE 1: AUTHENTIC TOURNAMENT BATTLE TREE (DEFAULT) */}
+            {battleViewMode === "tree" ? (
+              <TournamentBracketTree battles={battles} category={activeCategory} />
+            ) : (
+              /* VIEW MODE 2: DETAILED MATCH CARDS GRID */
+              <div className="space-y-6">
+                {/* Stage Filter Tabs */}
+                <div className="bg-[#151515] border border-neutral-800 p-3 sm:p-4 rounded-xl flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
+                    Filter by Battle Stage:
                   </span>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {top16Battles.map((battle) => (
-                    <PublicBattleCard key={battle.matchId} battle={battle} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* STAGE 2: TOP 8 QUARTER-FINALS */}
-            {quarterFinals.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "QF") && (
-              <div className="space-y-3">
-                <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#FDE047] ring-2 ring-[#FDE047]/30" />
-                    <h3 className="text-sm font-black uppercase text-white tracking-wider">
-                      Stage 2: Top 8 Quarter-Finals
-                    </h3>
+                  <div className="flex flex-wrap gap-1.5 text-xs font-bold">
+                    <button
+                      onClick={() => setBracketRoundFilter("ALL")}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${
+                        bracketRoundFilter === "ALL"
+                          ? "bg-white text-black font-black"
+                          : "bg-[#202020] text-neutral-300 hover:text-white"
+                      }`}
+                    >
+                      All Matches
+                    </button>
+                    {top16Battles.length > 0 && (
+                      <button
+                        onClick={() => setBracketRoundFilter("T16")}
+                        className={`px-3 py-1.5 rounded-lg transition-all ${
+                          bracketRoundFilter === "T16"
+                            ? "bg-[#38BDF8] text-black font-black"
+                            : "bg-[#202020] text-neutral-300 hover:text-white"
+                        }`}
+                      >
+                        Top 16
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setBracketRoundFilter("QF")}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${
+                        bracketRoundFilter === "QF"
+                          ? "bg-[#FDE047] text-black font-black"
+                          : "bg-[#202020] text-neutral-300 hover:text-white"
+                      }`}
+                    >
+                      Top 8 (QF)
+                    </button>
+                    <button
+                      onClick={() => setBracketRoundFilter("SF")}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${
+                        bracketRoundFilter === "SF"
+                          ? "bg-[#FB7185] text-black font-black"
+                          : "bg-[#202020] text-neutral-300 hover:text-white"
+                      }`}
+                    >
+                      Top 4 (SF)
+                    </button>
+                    <button
+                      onClick={() => setBracketRoundFilter("FINAL")}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${
+                        bracketRoundFilter === "FINAL"
+                          ? "bg-[#4ADE80] text-black font-black"
+                          : "bg-[#202020] text-neutral-300 hover:text-white"
+                      }`}
+                    >
+                      Finals
+                    </button>
                   </div>
-                  <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
-                    4 Matches &bull; 1 min × 2 rounds &bull; Winners Advance to Top 4
-                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {quarterFinals.map((battle) => (
-                    <PublicBattleCard key={battle.matchId} battle={battle} />
-                  ))}
-                </div>
-              </div>
-            )}
+                {/* STAGE 1: TOP 16 */}
+                {top16Battles.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "T16") && (
+                  <div className="space-y-3">
+                    <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8] ring-2 ring-[#38BDF8]/30" />
+                        <h3 className="text-sm font-black uppercase text-white tracking-wider">
+                          Stage 1: Top 16 Battles
+                        </h3>
+                      </div>
+                      <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
+                        8 Matches &bull; 1 min × 2 rounds &bull; Winners Advance to Top 8
+                      </span>
+                    </div>
 
-            {/* STAGE 3: TOP 4 SEMI-FINALS */}
-            {semiFinals.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "SF") && (
-              <div className="space-y-3">
-                <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#FB7185] ring-2 ring-[#FB7185]/30" />
-                    <h3 className="text-sm font-black uppercase text-white tracking-wider">
-                      Stage 3: Top 4 Semi-Finals
-                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {top16Battles.map((battle) => (
+                        <PublicBattleCard key={battle.matchId} battle={battle} />
+                      ))}
+                    </div>
                   </div>
-                  <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
-                    2 Matches &bull; 1:30 min × 2 rounds &bull; Winners Advance to Grand Final
-                  </span>
-                </div>
+                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {semiFinals.map((battle) => (
-                    <PublicBattleCard key={battle.matchId} battle={battle} />
-                  ))}
-                </div>
-              </div>
-            )}
+                {/* STAGE 2: TOP 8 QUARTER-FINALS */}
+                {quarterFinals.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "QF") && (
+                  <div className="space-y-3">
+                    <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#FDE047] ring-2 ring-[#FDE047]/30" />
+                        <h3 className="text-sm font-black uppercase text-white tracking-wider">
+                          Stage 2: Top 8 Quarter-Finals
+                        </h3>
+                      </div>
+                      <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
+                        4 Matches &bull; 1 min × 2 rounds &bull; Winners Advance to Top 4
+                      </span>
+                    </div>
 
-            {/* STAGE 4: FINALS & SMALL FINAL */}
-            {finalBattles.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "FINAL") && (
-              <div className="space-y-3">
-                <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] ring-2 ring-[#4ADE80]/30" />
-                    <h3 className="text-sm font-black uppercase text-white tracking-wider">
-                      {activeCategory === "national"
-                        ? "Stage 4: Grand Final & Small Final (3rd Place Battle)"
-                        : "Stage 4: Regional Grand Final"}
-                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {quarterFinals.map((battle) => (
+                        <PublicBattleCard key={battle.matchId} battle={battle} />
+                      ))}
+                    </div>
                   </div>
-                  <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
-                    Championship Deciders &bull; 1:30 min × 2 rounds
-                  </span>
-                </div>
+                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {finalBattles.map((battle) => (
-                    <PublicBattleCard
-                      key={battle.matchId}
-                      battle={battle}
-                      isGrandFinal={battle.matchId.includes("FINAL") && !battle.matchId.includes("THIRD")}
-                      isSmallFinal={battle.matchId.includes("THIRD")}
-                    />
-                  ))}
-                </div>
+                {/* STAGE 3: TOP 4 SEMI-FINALS */}
+                {semiFinals.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "SF") && (
+                  <div className="space-y-3">
+                    <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#FB7185] ring-2 ring-[#FB7185]/30" />
+                        <h3 className="text-sm font-black uppercase text-white tracking-wider">
+                          Stage 3: Top 4 Semi-Finals
+                        </h3>
+                      </div>
+                      <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
+                        2 Matches &bull; 1:30 min × 2 rounds &bull; Winners Advance to Grand Final
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {semiFinals.map((battle) => (
+                        <PublicBattleCard key={battle.matchId} battle={battle} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* STAGE 4: FINALS & SMALL FINAL */}
+                {finalBattles.length > 0 && (bracketRoundFilter === "ALL" || bracketRoundFilter === "FINAL") && (
+                  <div className="space-y-3">
+                    <div className="bg-[#151515] border border-neutral-700 px-4 py-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] ring-2 ring-[#4ADE80]/30" />
+                        <h3 className="text-sm font-black uppercase text-white tracking-wider">
+                          {activeCategory === "national"
+                            ? "Stage 4: Grand Final & Small Final (3rd Place Battle)"
+                            : "Stage 4: Regional Grand Final"}
+                        </h3>
+                      </div>
+                      <span className="text-[11px] text-neutral-400 font-medium bg-[#1e1e1e] border border-neutral-700/80 px-2.5 py-0.5 rounded-md">
+                        Championship Deciders &bull; 1:30 min × 2 rounds
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {finalBattles.map((battle) => (
+                        <PublicBattleCard
+                          key={battle.matchId}
+                          battle={battle}
+                          isGrandFinal={battle.matchId.includes("FINAL") && !battle.matchId.includes("THIRD")}
+                          isSmallFinal={battle.matchId.includes("THIRD")}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -633,6 +700,18 @@ function PublicBattleCard({
   isGrandFinal?: boolean;
   isSmallFinal?: boolean;
 }) {
+  const isRegional = battle.matchId.startsWith("R");
+  const getCompName = (comp: BattleCompetitor | null) => {
+    if (!comp?.name) return null;
+    if (isRegional && /tazman/i.test(comp.name)) return "Pranay";
+    return comp.name;
+  };
+  const getWinnerName = (name: string | null | undefined) => {
+    if (!name) return "";
+    if (isRegional && /tazman/i.test(name)) return "Pranay";
+    return name;
+  };
+
   const compA = battle.competitorA;
   const compB = battle.competitorB;
   const hasWinner = Boolean(battle.winnerId);

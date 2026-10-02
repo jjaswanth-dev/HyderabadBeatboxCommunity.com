@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { LuMicVocal } from "react-icons/lu";
 import Image from "next/image";
 import Link from "next/link";
-
 import TicketButton from "@/components/TicketButton";
 
 export default function ImageCarousel() {
@@ -13,14 +12,34 @@ export default function ImageCarousel() {
   const [images, setImages] = useState<string[]>([]);
   const [isCarouselVisible, setIsCarouselVisible] = useState(false);
   const [isWildcardActive, setIsWildcardActive] = useState(false);
+  const [ticketConfig, setTicketConfig] = useState<{
+    isActive: boolean;
+    formUrl?: string;
+    title?: string;
+    eventTag?: string;
+    admitText?: string;
+    serialNumber?: string;
+    priceText?: string;
+  } | null>(null);
 
   useEffect(() => {
     const checkStatuses = async () => {
       try {
-        const wildcardRes = await fetch("/api/wildcard");
-        if (wildcardRes.ok) {
-          const wData = await wildcardRes.json();
+        const [wildcardRes, ticketRes] = await Promise.allSettled([
+          fetch("/api/wildcard"),
+          fetch("/api/ticket"),
+        ]);
+
+        if (wildcardRes.status === "fulfilled" && wildcardRes.value.ok) {
+          const wData = await wildcardRes.value.json();
           if (wData && wData.isActive) setIsWildcardActive(true);
+        }
+
+        if (ticketRes.status === "fulfilled" && ticketRes.value.ok) {
+          const tData = await ticketRes.value.json();
+          if (tData && tData.isActive) {
+            setTicketConfig(tData);
+          }
         }
       } catch (err) {
         console.error("Error checking feature statuses in ImageCarousel:", err);
@@ -92,20 +111,30 @@ export default function ImageCarousel() {
           <p className="text-sm md:text-base text-white/60">
             Uniting rhythms, creating beats, building community
           </p>
-          <div className="flex flex-wrap items-center gap-4 pt-1">
-            <TicketButton />
-
-            {isWildcardActive && (
-              <button
-                onClick={() => {
-                  window.location.href = "/wildcard";
-                }}
-                className="px-5 py-3 text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-md font-bold text-xs sm:text-sm hover:scale-105 transition-all duration-300 cursor-pointer inline-block font-sans"
-              >
-                Submit Wildcards Now!
-              </button>
-            )}
-          </div>
+          {(ticketConfig?.isActive || isWildcardActive) && (
+            <div className="flex flex-wrap items-center gap-4 pt-1">
+              {ticketConfig?.isActive && (
+                <TicketButton
+                  formUrl={ticketConfig.formUrl}
+                  title={ticketConfig.title}
+                  eventTag={ticketConfig.eventTag}
+                  admitText={ticketConfig.admitText}
+                  serialNumber={ticketConfig.serialNumber}
+                  priceText={ticketConfig.priceText}
+                />
+              )}
+              {isWildcardActive && (
+                <button
+                  onClick={() => {
+                    window.location.href = "/wildcard";
+                  }}
+                  className="px-5 py-3 text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-md font-bold text-xs sm:text-sm hover:scale-105 transition-all duration-300 cursor-pointer inline-block font-sans"
+                >
+                  Submit Wildcards Now!
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -35,12 +35,10 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## ⏳ Wildcard Feature Deadlines & Reversions
-
-Please note the following critical schedule for reverting wildcard adjustments:
-
-1. **September 27th Reversion**:
-   - Revert changes made to `components/ImageCarousel.tsx` (such as restoring original slides/local image declarations: `/home1.webp`, `/home2.webp`, and resetting margins/states if needed).
-2. **September 28th Reversion**:
-   - Revert the temporary layout shift in `components/ImageCarousel.tsx` (restoring the title, paragraph, and "Submit Wildcards Now!" button back to their centered positions and larger font sizes).
+## 🏆 Championship System & Results Mode
+The platform features an automated tournament scoring and bracket system:
+- **Yearly Contender Management:** Directly manage National and Regional participants (Add, Edit, Remove, Statuses) from the Admin Dashboard (`/admin/dashboard/championship`) without hardcoded resets.
+- **Dynamic Ticket Manager:** Toggle homepage ticket sales, customize booking links (Google Forms, BookMyShow, PayTM Insider), and preview vintage tickets directly from the Admin Dashboard (`/admin/dashboard/ticket`).
+- **Post-Championship Mode:** Configured for completed events with **`CHAMPIONSHIP RESULTS 2026`** in navigation and official results badge on `/championship`.
+- **Operations & Teardown Playbooks:** See [CHAMPIONSHIP_OPERATIONS_GUIDE.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/CHAMPIONSHIP_OPERATIONS_GUIDE.md), [PROJECT_CONTEXT.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/PROJECT_CONTEXT.md), and [AGENTS.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/AGENTS.md) for complete technical architecture, operations guides, and feature management steps.
 

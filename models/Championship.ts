@@ -97,6 +97,15 @@ const championshipSchema = new mongoose.Schema(
       enum: ["eliminations", "battles", "both"],
       default: "both",
     },
+    eventStatus: {
+      type: String,
+      enum: ["live", "results"],
+      default: "results",
+    },
+    navLabel: {
+      type: String,
+      default: "CHAMPIONSHIP RESULTS 2026",
+    },
     judges: {
       type: [judgeSchema],
       default: [

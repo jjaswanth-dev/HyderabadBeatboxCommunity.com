@@ -3,8 +3,13 @@
 import React from "react";
 import Image from "next/image";
 
-interface TicketButtonProps {
+export interface TicketButtonProps {
   formUrl?: string;
+  title?: string;
+  eventTag?: string;
+  admitText?: string;
+  serialNumber?: string;
+  priceText?: string;
   className?: string;
 }
 
@@ -13,15 +18,26 @@ export const DEFAULT_TICKET_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQ
 
 export default function TicketButton({
   formUrl = DEFAULT_TICKET_FORM_URL,
+  title = "BUY TICKETS",
+  eventTag = "HBC 2026",
+  admitText = "ADMIT ONE",
+  serialNumber = "№ 270926",
+  priceText = "",
   className = "",
 }: TicketButtonProps) {
+  const displayUrl = formUrl || DEFAULT_TICKET_FORM_URL;
+  const displayTitle = title || "BUY TICKETS";
+  const displayEventTag = eventTag || "HBC 2026";
+  const displayAdmitText = admitText || "ADMIT ONE";
+  const displaySerialNumber = serialNumber || "№ 270926";
+
   return (
     <a
-      href={formUrl}
+      href={displayUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={`group relative inline-block select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EAFF00] focus-visible:ring-offset-2 focus-visible:ring-offset-black ${className}`}
-      aria-label="Buy Tickets - Hyderabad Beatbox Championship 2026"
+      aria-label={`${displayTitle} - ${displayEventTag}`}
     >
       <div className="relative isolate py-2 px-1">
         
@@ -48,9 +64,9 @@ export default function TicketButton({
             </div>
             
             <div className="w-full flex items-center justify-between text-[10px] font-mono font-bold text-[#EAFF00]/90 tracking-widest pl-2 pr-2">
-              <span>★ ADMIT ONE ★</span>
+              <span>★ {displayAdmitText} ★</span>
               <span className="border-l border-dashed border-[#EAFF00]/50 h-5" />
-              <span>№ 270926</span>
+              <span>{displaySerialNumber}</span>
             </div>
           </div>
         </div>
@@ -78,7 +94,7 @@ export default function TicketButton({
             </div>
             
             <div className="w-full flex items-center justify-between text-[10px] font-mono font-extrabold tracking-widest pl-2 pr-2">
-              <span>★ CHAMPIONSHIP 2026 ★</span>
+              <span>★ {displayEventTag} ★</span>
               <span className="border-l border-dashed border-purple-950/50 h-5" />
               <span>ENTRY PASS</span>
             </div>
@@ -121,7 +137,7 @@ export default function TicketButton({
             {/* Left Side: Serial Number Stamp */}
             <div className="flex flex-col items-center justify-center border-r border-dashed border-[#EAFF00]/40 pr-2 pl-1">
               <span className="text-[8px] font-mono font-bold tracking-tighter text-[#EAFF00]/70 uppercase [writing-mode:vertical-rl] rotate-180">
-                № 270926
+                {displaySerialNumber}
               </span>
             </div>
 
@@ -141,14 +157,14 @@ export default function TicketButton({
               {/* Typography Header & Headline */}
               <div className="text-left flex flex-col">
                 <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono tracking-widest text-[#EAFF00] font-bold uppercase">
-                  <span>★ ADMIT ONE</span>
+                  <span>★ {displayAdmitText}</span>
                   <span className="text-[#EAFF00]/40">•</span>
-                  <span className="hidden sm:inline">HBC 2026 ★</span>
+                  <span className="hidden sm:inline">{displayEventTag} ★</span>
                   <span className="sm:hidden">★</span>
                 </div>
                 
                 <span className="text-sm sm:text-base font-black tracking-wider text-white uppercase group-hover:text-[#EAFF00] transition-colors font-sans flex items-center gap-1.5 drop-shadow-[2px_2px_0px_#581C87]">
-                  BUY TICKETS
+                  {displayTitle}
                 </span>
               </div>
             </div>
@@ -163,7 +179,7 @@ export default function TicketButton({
             {/* Right Stub: Barcode & Entry Details */}
             <div className="flex flex-col items-center justify-center pl-1 pr-1 sm:pr-2">
               <span className="text-[8px] sm:text-[9px] font-mono font-extrabold tracking-widest text-[#EAFF00] uppercase">
-                ENTRY
+                {priceText ? priceText : "ENTRY"}
               </span>
               {/* Vintage Barcode */}
               <div className="flex gap-[1.5px] mt-1 items-center h-4 opacity-80 group-hover:opacity-100 transition-opacity">

@@ -6,8 +6,6 @@ import crypto from "crypto";
 import {
   INITIAL_NATIONAL_BATTLES,
   INITIAL_REGIONAL_BATTLES,
-  DEFAULT_NATIONAL_PARTICIPANTS,
-  DEFAULT_REGIONAL_PARTICIPANTS,
 } from "@/lib/championshipDefaults";
 
 export async function GET(req: NextRequest) {
@@ -17,36 +15,6 @@ export async function GET(req: NextRequest) {
     let championship = await Championship.findOne({});
     if (!championship) {
       championship = await Championship.create({});
-    }
-
-    // Auto-sync roster if database has previous schema/data
-    if (
-      championship.national?.participants?.[0]?.name !== "Parth" ||
-      championship.regional?.participants?.[0]?.name !== "Mespop" ||
-      championship.regional?.participants?.length !== DEFAULT_REGIONAL_PARTICIPANTS.length
-    ) {
-      championship.national.participants = DEFAULT_NATIONAL_PARTICIPANTS;
-      championship.regional.participants = DEFAULT_REGIONAL_PARTICIPANTS;
-      championship.markModified("national.participants");
-      championship.markModified("regional.participants");
-      await championship.save();
-    }
-
-    // Auto-sync judge names to Nabinbe and Kevin
-    let judgeModified = false;
-    championship.judges.forEach((j: any) => {
-      if (j.id === "judge-1" && j.name !== "Nabinbe") {
-        j.name = "Nabinbe";
-        judgeModified = true;
-      }
-      if (j.id === "judge-2" && j.name !== "Kevin") {
-        j.name = "Kevin";
-        judgeModified = true;
-      }
-    });
-    if (judgeModified) {
-      championship.markModified("judges");
-      await championship.save();
     }
 
     return NextResponse.json(championship);
@@ -77,6 +45,8 @@ export async function POST(req: NextRequest) {
       if (body.isActive !== undefined) championship.isActive = body.isActive;
       if (body.title) championship.title = body.title;
       if (body.activeStage) championship.activeStage = body.activeStage;
+      if (body.eventStatus) championship.eventStatus = body.eventStatus;
+      if (body.navLabel !== undefined) championship.navLabel = body.navLabel;
       await championship.save();
       return NextResponse.json({ success: true, championship });
     }

@@ -5,7 +5,6 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import Section from "./Section";
 import LoadingSpinner from "./LoadingSpinner";
 import { Share2, Check, Copy, MessageSquare } from "lucide-react";
@@ -19,6 +18,18 @@ interface BlogType {
   createdAt: string;
 }
 
+function formatBlogDate(dateStr: string) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
   const [blog, setBlog] = useState<BlogType>(initialBlog);
   const [loading, setLoading] = useState(false);
@@ -26,8 +37,7 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
   const [readingProgress, setReadingProgress] = useState(0);
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
-  const params = useParams();
-  const id = params?.id;
+  const [canShare, setCanShare] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,6 +59,9 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
     if (typeof window !== "undefined") {
       setShareUrl(window.location.href);
     }
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      setCanShare(true);
+    }
   }, []);
 
   const handleCopyLink = async () => {
@@ -62,7 +75,7 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
   };
 
   const handleNativeShare = async () => {
-    if (typeof navigator !== "undefined" && "share" in navigator) {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({
           title: blog.title,
@@ -166,8 +179,9 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
           <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center gradient-text">
             {blog.title}
           </h1>
-          <p className="text-center text-white/60 mb-8">
-            By {blog.author} on {new Date(blog.createdAt).toLocaleDateString()}
+          <p className="text-center text-white/60 mb-8" suppressHydrationWarning>
+            By {blog.author} on{" "}
+            <span suppressHydrationWarning>{formatBlogDate(blog.createdAt)}</span>
           </p>
         </div>
 
@@ -180,7 +194,7 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
           <h3 className="text-xl font-bold mb-4 text-white">Share this article</h3>
           <div className="flex flex-wrap items-center gap-4">
             {/* Native Share Button (only if supported) */}
-            {typeof navigator !== "undefined" && "share" in navigator && (
+            {canShare && (
               <button
                 type="button"
                 onClick={handleNativeShare}

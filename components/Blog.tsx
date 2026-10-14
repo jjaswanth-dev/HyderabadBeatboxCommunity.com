@@ -99,18 +99,18 @@ export default function Blog({ initialLimit = 0 }: { initialLimit?: number }) {
             </Link>
           ))}
         </div>
-        <div className="text-center mt-8 space-x-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-8 md:mt-12">
           {initialLimit > 0 && hasMore && (
             <Link
               href="/blog"
-              className="inline-block px-8 py-4 bg-white/10 border border-white/10 text-white rounded-full font-bold hover:bg-white/20 transition-colors duration-300"
+              className="w-full sm:w-auto px-6 py-2.5 sm:px-8 sm:py-3.5 bg-white/10 border border-white/15 hover:border-white/30 text-white rounded-full font-bold text-xs sm:text-sm hover:bg-white/20 transition-all duration-300 text-center"
             >
               View all Blogs
             </Link>
           )}
           <Link
             href="/write-blog"
-            className="inline-block px-8 py-4 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-colors duration-300"
+            className="w-full sm:w-auto px-6 py-2.5 sm:px-8 sm:py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold text-xs sm:text-sm transition-all duration-300 shadow-lg shadow-blue-600/20 text-center"
           >
             Write a Blog Post
           </Link>

@@ -79,30 +79,33 @@ export function scopeCss(css: string, containerClass: string = ".blog-render-con
       .join(", ");
   };
 
+  // 1. Strip CSS comments (/* ... */) so they don't break selector matching
+  let cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
   // Process CSS block by block (handles @media, @keyframes, and normal rules)
   let result = "";
   let i = 0;
 
-  while (i < css.length) {
-    const nextOpen = css.indexOf("{", i);
+  while (i < cleanCss.length) {
+    const nextOpen = cleanCss.indexOf("{", i);
     if (nextOpen === -1) {
-      result += css.slice(i);
+      result += cleanCss.slice(i);
       break;
     }
 
-    const selectorPart = css.slice(i, nextOpen).trim();
+    const selectorPart = cleanCss.slice(i, nextOpen).trim();
 
     // Check for @keyframes or other @-rules that contain sub-blocks
     if (selectorPart.startsWith("@keyframes") || selectorPart.startsWith("@-webkit-keyframes") || selectorPart.startsWith("@font-face")) {
       // Find matching outer closing brace
       let depth = 1;
       let j = nextOpen + 1;
-      while (j < css.length && depth > 0) {
-        if (css[j] === "{") depth++;
-        else if (css[j] === "}") depth--;
+      while (j < cleanCss.length && depth > 0) {
+        if (cleanCss[j] === "{") depth++;
+        else if (cleanCss[j] === "}") depth--;
         j++;
       }
-      result += css.slice(i, j);
+      result += cleanCss.slice(i, j);
       i = j;
       continue;
     }
@@ -111,26 +114,26 @@ export function scopeCss(css: string, containerClass: string = ".blog-render-con
       // Find matching closing brace of @media
       let depth = 1;
       let j = nextOpen + 1;
-      while (j < css.length && depth > 0) {
-        if (css[j] === "{") depth++;
-        else if (css[j] === "}") depth--;
+      while (j < cleanCss.length && depth > 0) {
+        if (cleanCss[j] === "{") depth++;
+        else if (cleanCss[j] === "}") depth--;
         j++;
       }
       const mediaHeader = selectorPart;
-      const innerCss = css.slice(nextOpen + 1, j - 1);
+      const innerCss = cleanCss.slice(nextOpen + 1, j - 1);
       result += `${mediaHeader} {\n${scopeCss(innerCss, containerClass)}\n}\n`;
       i = j;
       continue;
     }
 
     // Normal CSS rule
-    const nextClose = css.indexOf("}", nextOpen);
+    const nextClose = cleanCss.indexOf("}", nextOpen);
     if (nextClose === -1) {
-      result += css.slice(i);
+      result += cleanCss.slice(i);
       break;
     }
 
-    const declarations = css.slice(nextOpen + 1, nextClose);
+    const declarations = cleanCss.slice(nextOpen + 1, nextClose);
     const scopedSelector = prefixSelectors(selectorPart);
     if (scopedSelector) {
       result += `${scopedSelector} {${declarations}}\n`;

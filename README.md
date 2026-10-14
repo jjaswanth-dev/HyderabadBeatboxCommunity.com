@@ -42,3 +42,12 @@ The platform features an automated tournament scoring and bracket system:
 - **Post-Championship Mode:** Configured for completed events with **`CHAMPIONSHIP RESULTS 2026`** in navigation and official results badge on `/championship`.
 - **Operations & Teardown Playbooks:** See [CHAMPIONSHIP_OPERATIONS_GUIDE.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/CHAMPIONSHIP_OPERATIONS_GUIDE.md), [PROJECT_CONTEXT.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/PROJECT_CONTEXT.md), and [AGENTS.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/AGENTS.md) for complete technical architecture, operations guides, and feature management steps.
 
+## 📝 Blog Engine & HTML/Markdown Submissions
+The blog system supports seamless uploads and live previews for both standard Markdown (`.md`) and raw HTML (`.html`/`.htm`) articles with isolated styling and mobile responsiveness:
+- **Automatic CSS Scoping Engine (`lib/blogUtils.ts`):** Embedded `<style>` blocks in uploaded HTML files (containing `:root`, `html`, `body`, `*`, `h1`, `p`, etc.) are automatically scoped under `.blog-render-container`. This prevents uploaded styles from bleeding out into the global page layout, navigation header, inputs, or buttons.
+- **CSS Comment Stripping & Comment Protection:** Cleans CSS comments (`/* ... */`) before selector parsing so internal comments in uploaded CSS do not corrupt selector prefixes.
+- **Mobile & iPhone Visibility Reliability (`components/Section.tsx`):** Added mount-state fallback triggers to `Section.tsx` so pages animate into view immediately on mobile browsers (Safari/iOS) even if the Intersection Observer API has delayed or missed callbacks, preventing pages from remaining stuck at `opacity: 0`.
+- **Horizontal Overflow & Alignment Protection (`app/globals.css`):** Wrapped `.blog-render-container` with strict `overflow-x: hidden`, constrained tables with `-webkit-overflow-scrolling: touch`, and normalized arbitrary internal margins and paddings to prevent wide tables or fixed-width containers from pushing the layout horizontally on phones.
+- **Live Preview & Full View Isolation:** Both `/write-blog`, `/admin/dashboard/blogs`, and public `/blog/[id]` render views are enclosed in isolated containers with `contain: style`.
+
+

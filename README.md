@@ -42,12 +42,21 @@ The platform features an automated tournament scoring and bracket system:
 - **Post-Championship Mode:** Configured for completed events with **`CHAMPIONSHIP RESULTS 2026`** in navigation and official results badge on `/championship`.
 - **Operations & Teardown Playbooks:** See [CHAMPIONSHIP_OPERATIONS_GUIDE.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/CHAMPIONSHIP_OPERATIONS_GUIDE.md), [PROJECT_CONTEXT.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/PROJECT_CONTEXT.md), and [AGENTS.md](file:///d:/Dev%20Workspace/HBX%20Site%20Deployed/hyd%20bbx%20Ful%20fledged%20website%20M(1)%20Deployed/AGENTS.md) for complete technical architecture, operations guides, and feature management steps.
 
-## 📝 Blog Engine & HTML/Markdown Submissions
-The blog system supports seamless uploads and live previews for both standard Markdown (`.md`) and raw HTML (`.html`/`.htm`) articles with isolated styling and mobile responsiveness:
-- **Automatic CSS Scoping Engine (`lib/blogUtils.ts`):** Embedded `<style>` blocks in uploaded HTML files (containing `:root`, `html`, `body`, `*`, `h1`, `p`, etc.) are automatically scoped under `.blog-render-container`. This prevents uploaded styles from bleeding out into the global page layout, navigation header, inputs, or buttons.
-- **CSS Comment Stripping & Comment Protection:** Cleans CSS comments (`/* ... */`) before selector parsing so internal comments in uploaded CSS do not corrupt selector prefixes.
-- **Mobile & iPhone Visibility Reliability (`components/Section.tsx`):** Added mount-state fallback triggers to `Section.tsx` so pages animate into view immediately on mobile browsers (Safari/iOS) even if the Intersection Observer API has delayed or missed callbacks, preventing pages from remaining stuck at `opacity: 0`.
-- **Horizontal Overflow & Alignment Protection (`app/globals.css`):** Wrapped `.blog-render-container` with strict `overflow-x: hidden`, constrained tables with `-webkit-overflow-scrolling: touch`, and normalized arbitrary internal margins and paddings to prevent wide tables or fixed-width containers from pushing the layout horizontally on phones.
-- **Live Preview & Full View Isolation:** Both `/write-blog`, `/admin/dashboard/blogs`, and public `/blog/[id]` render views are enclosed in isolated containers with `contain: style`.
+## 📝 Blog Engine & Pure Markdown System
+The blog system is powered by a clean, secure, and responsive **Pure Markdown** architecture:
+- **Markdown (.md) Direct Uploads & Live Previews:** Supports `.md`, `.markdown`, and `.txt` file uploads with instant parsing. Automatic title extraction from `# Main Heading`.
+- **Pure Markdown Rendering via `react-markdown`:** Streamlined markdown pipeline using `remark-gfm` (tables, task lists, strikethroughs, autolinks) and `remark-breaks` (natural linebreaks).
+- **Zero HTML Bleed & Complete Security:** Uninstalled `rehype-raw` and removed raw HTML injection. Unsafe HTML, scripts, and embedded style tags are completely stripped, preventing any third-party styling leaks, DOM corruption, or layout breakages.
+- **Enhanced Markdown Formatting Toolbar:** 1-click shortcuts for bold, italics, H1/H2/H3 headers, bullet/numbered lists, quotes, hyperlinks, inline code (`` `code` ``), GFM tables, task lists, and horizontal dividers.
+- **Mobile & iPhone Visibility Reliability:** Implemented mount-state fallback triggers in `Section.tsx` so articles fade in reliably on mobile Safari and iOS without waiting on sluggish intersection observers.
+- **Mobile-Responsive Tables & Images:** Automatic horizontal scrolling for tables (`-webkit-overflow-scrolling: touch`) and constrained image dimensions prevent canvas widening or horizontal scrolling bugs on smartphones.
+- **Admin Reviewer & Inline Editor:** Admin dashboard allows previewing posts directly via `BlogDetail` and inline editing with live markdown preview before approving or rejecting.
+
+## 🚀 Hero Image Carousel Optimization
+- **Server Pre-fetch (`app/page.tsx`):** Pre-fetches the active homepage image list directly on the server before HTML is streamed to the browser, eliminating the client-side JavaScript fetch waterfall.
+- **Single Static Fallback (`/home1.webp`):** The carousel initializes with `/home1.webp` (220KB) as the guaranteed instant background, ensuring 0ms blank screens even during cold starts.
+- **Direct Edge CDN Delivery (`unoptimized={src.startsWith("http")}`):** Bypasses the internal Next.js image proxy for ImageKit URLs, allowing ImageKit's global CDN to deliver images directly with ultra-low latency.
+
+
 
 

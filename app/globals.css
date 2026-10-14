@@ -273,44 +273,31 @@ body::-webkit-scrollbar {
   animation: button-glow-pulse 3s infinite ease-in-out;
 }
 
-/* Scoped container for blog HTML/Markdown rendering so embedded styles don't bleed out */
+/* Scoped container for Markdown rendering */
 .blog-render-container {
-  contain: style;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
 }
 
-/* Ensure inner elements and HTML containers never overflow screen on mobile/iPhone */
+/* Ensure inner elements never overflow screen on mobile/iPhone */
 .blog-render-container > * {
   max-width: 100% !important;
 }
 
-/* Ensure tables inside uploaded blogs have responsive scroll wrapper */
+/* Responsive scrolling for Markdown tables */
 .blog-render-container table {
-  max-width: 100%;
-}
-
-.blog-render-container .table-wrap {
   width: 100%;
   max-width: 100%;
+  display: block;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Responsive fix for uploaded blog article containers */
-.blog-render-container .article {
-  width: 100% !important;
-  max-width: 100% !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+.blog-render-container img {
+  max-width: 100%;
+  height: auto;
 }
 
-@media (max-width: 640px) {
-  .blog-render-container .article {
-    padding-top: 20px !important;
-    padding-bottom: 40px !important;
-  }
-}
 
 

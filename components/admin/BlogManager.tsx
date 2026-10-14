@@ -7,7 +7,6 @@ import BlogDetail from "@/components/BlogDetail";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { upload } from "@imagekit/next";
 import { 
   Eye, 
@@ -189,35 +188,16 @@ export default function BlogManager() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const isHtml = file.name.endsWith(".html") || file.name.endsWith(".htm");
     const reader = new FileReader();
     reader.onload = (event) => {
       let rawText = (event.target?.result as string) || "";
       if (!rawText) return;
 
-      if (isHtml) {
-        const titleMatch = rawText.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-        if (titleMatch && titleMatch[1] && !editTitle.trim()) {
-          setEditTitle(titleMatch[1].trim());
-        }
-
-        const styleMatches = rawText.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || [];
-        const extractedStyles = styleMatches.join("\n\n");
-
-        const bodyMatch = rawText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-        let bodyContent = bodyMatch && bodyMatch[1] ? bodyMatch[1].trim() : rawText.trim();
-
-        if (extractedStyles && !bodyContent.includes("<style")) {
-          bodyContent = `${extractedStyles}\n\n${bodyContent}`;
-        }
-        rawText = normalizeContent(bodyContent);
-      } else {
-        const mdTitleMatch = rawText.match(/^#\s+(.+)$/m);
-        if (mdTitleMatch && mdTitleMatch[1] && !editTitle.trim()) {
-          setEditTitle(mdTitleMatch[1].trim());
-        }
-        rawText = normalizeContent(rawText);
+      const mdTitleMatch = rawText.match(/^#\s+(.+)$/m);
+      if (mdTitleMatch && mdTitleMatch[1] && !editTitle.trim()) {
+        setEditTitle(mdTitleMatch[1].trim());
       }
+      rawText = normalizeContent(rawText);
 
       setEditContent(rawText);
     };
@@ -314,11 +294,11 @@ export default function BlogManager() {
 
   return (
     <div className="glass-effect border border-white/10 p-6 rounded-2xl shadow-2xl text-white">
-      {/* Hidden file input for importing .md/.html in Edit modal */}
+      {/* Hidden file input for importing .md in Edit modal */}
       <input
         type="file"
         ref={editDocInputRef}
-        accept=".md,.markdown,.html,.htm,.txt"
+        accept=".md,.markdown,.txt"
         onChange={handleEditDocUpload}
         className="hidden"
       />
@@ -669,7 +649,7 @@ export default function BlogManager() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <label className="block text-xs font-semibold text-white/80">
-                    Blog Content (Markdown & HTML Supported)
+                    Blog Content (Markdown)
                   </label>
                   <button
                     type="button"
@@ -677,7 +657,7 @@ export default function BlogManager() {
                     className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Upload .md / .html file</span>
+                    <span>Upload .md file</span>
                   </button>
                 </div>
 
@@ -690,7 +670,7 @@ export default function BlogManager() {
                       editTab === "write" ? "bg-blue-600 text-white shadow" : "text-white/60 hover:text-white"
                     }`}
                   >
-                    Write (Code)
+                    Write (Markdown)
                   </button>
                   <button
                     type="button"
@@ -709,14 +689,13 @@ export default function BlogManager() {
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     className="w-full p-4 bg-white/5 border border-white/15 rounded-xl text-white font-mono text-xs leading-relaxed focus:outline-none focus:border-blue-500"
-                    placeholder="Enter or paste Markdown or HTML here..."
+                    placeholder="Enter or paste Markdown here..."
                   />
                 ) : (
                   <div className="p-5 bg-white/5 border border-white/10 rounded-xl overflow-y-auto max-h-[420px] blog-render-container">
-                    <div className="prose prose-sm prose-invert max-w-none text-white/80 break-words [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-xl [&_iframe]:my-4 [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-2.5 [&_td]:border [&_td]:border-white/10 [&_td]:p-2.5">
+                    <div className="prose prose-sm prose-invert max-w-none text-white/80 break-words [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-2.5 [&_td]:border [&_td]:border-white/10 [&_td]:p-2.5">
                       <ReactMarkdown
                         remarkPlugins={[remarkBreaks, remarkGfm]}
-                        rehypePlugins={[rehypeRaw]}
                       >
                         {normalizeContent(editContent)}
                       </ReactMarkdown>

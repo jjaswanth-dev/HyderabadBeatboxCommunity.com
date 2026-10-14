@@ -7,7 +7,6 @@ import { upload } from "@imagekit/next";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { 
   Bold, 
   Italic, 
@@ -25,10 +24,9 @@ import {
   Check, 
   X,
   Code,
-  Tv,
-  Tag,
   Minus,
-  Bot
+  Table,
+  CheckSquare
 } from "lucide-react";
 import { normalizeContent } from "@/lib/blogUtils";
 
@@ -154,41 +152,17 @@ export default function WriteBlog() {
     if (!file) return;
 
     const fileName = file.name;
-    const isHtml = fileName.endsWith(".html") || fileName.endsWith(".htm");
-
     const reader = new FileReader();
     reader.onload = (event) => {
       let rawText = (event.target?.result as string) || "";
       if (!rawText) return;
 
-      if (isHtml) {
-        // If full HTML document, extract title if title input is empty
-        const titleMatch = rawText.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-        if (titleMatch && titleMatch[1] && !title.trim()) {
-          setTitle(titleMatch[1].trim());
-        }
-
-        // Extract any <style> tags from <head> so custom styling is retained
-        const styleMatches = rawText.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || [];
-        const extractedStyles = styleMatches.join("\n\n");
-
-        // If body tags exist, extract inner body content for cleaner blog insertion
-        const bodyMatch = rawText.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-        let bodyContent = bodyMatch && bodyMatch[1] ? bodyMatch[1].trim() : rawText.trim();
-
-        if (extractedStyles && !bodyContent.includes("<style")) {
-          bodyContent = `${extractedStyles}\n\n${bodyContent}`;
-        }
-
-        rawText = normalizeContent(bodyContent);
-      } else {
-        // If markdown starts with # Title, extract title if title input is empty
-        const mdTitleMatch = rawText.match(/^#\s+(.+)$/m);
-        if (mdTitleMatch && mdTitleMatch[1] && !title.trim()) {
-          setTitle(mdTitleMatch[1].trim());
-        }
-        rawText = normalizeContent(rawText);
+      // If markdown starts with # Title, extract title if title input is empty
+      const mdTitleMatch = rawText.match(/^#\s+(.+)$/m);
+      if (mdTitleMatch && mdTitleMatch[1] && !title.trim()) {
+        setTitle(mdTitleMatch[1].trim());
       }
+      rawText = normalizeContent(rawText);
 
       setContent(rawText);
       setLoadedFileName(fileName);
@@ -288,11 +262,11 @@ export default function WriteBlog() {
 
   return (
     <Section id="write-blog" className="py-8 md:py-12">
-      {/* Hidden file input for Markdown/HTML doc import */}
+      {/* Hidden file input for Markdown doc import */}
       <input
         type="file"
         ref={docFileInputRef}
-        accept=".md,.markdown,.html,.htm,.txt"
+        accept=".md,.markdown,.txt"
         onChange={handleDocFileUpload}
         className="hidden"
       />
@@ -308,20 +282,17 @@ export default function WriteBlog() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-white text-sm md:text-base">
-                  Markdown (.md) &amp; HTML (.html) Supported
+                  Markdown (.md) Supported
                 </h3>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/90 border border-white/20">
                   .md
                 </span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/90 border border-white/20">
-                  .html
-                </span>
               </div>
               <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
-                Upload your <strong className="text-white">.md</strong> or <strong className="text-white">.html</strong> file so that your blog looks nicely formatted with clean headings, styled text, and embeds.
+                Upload your <strong className="text-white">.md</strong> file or write directly so your blog displays cleanly with headings, tables, bullet points, and quotes.
               </p>
               <p className="text-xs text-white/60 pt-1 leading-relaxed border-t border-white/10 mt-2">
-                <span className="text-white font-medium">AI Tip:</span> You can simply give your normal text to any AI (ChatGPT, Claude, Gemini) and tell it: <em className="text-white/90">&ldquo;Write/format this blog post in Markdown (.md) or HTML (.html) with stylish headings and bullet points&rdquo;</em>, then upload or paste the file here.
+                <span className="text-white font-medium">AI Tip:</span> You can ask any AI (ChatGPT, Claude, Gemini): <em className="text-white/90">&ldquo;Write/format this blog post in standard Markdown (.md) with clear headings, tables, and bullet points&rdquo;</em>, then upload or paste the Markdown here.
               </p>
             </div>
 
@@ -330,10 +301,10 @@ export default function WriteBlog() {
                 type="button"
                 onClick={() => docFileInputRef.current?.click()}
                 className="px-4 py-2 rounded-lg bg-white text-black hover:bg-neutral-200 text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2"
-                title="Upload Markdown or HTML file"
+                title="Upload Markdown file"
               >
                 <Upload className="w-4 h-4 text-black" />
-                <span>Upload .md / .html File</span>
+                <span>Upload .md File</span>
               </button>
             </div>
           </div>
@@ -443,7 +414,7 @@ export default function WriteBlog() {
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-white/90 font-medium text-sm">
-                  Blog Content <span className="text-white/50 font-normal">(Markdown & HTML)</span>
+                  Blog Content <span className="text-white/50 font-normal">(Markdown)</span>
                 </label>
                 <button
                   type="button"
@@ -451,7 +422,7 @@ export default function WriteBlog() {
                   className="text-xs text-white/70 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Upload className="w-3 h-3" />
-                  <span>Upload .md / .html</span>
+                  <span>Upload .md</span>
                 </button>
               </div>
 
@@ -564,36 +535,36 @@ export default function WriteBlog() {
                         <LinkIcon className="w-3.5 h-3.5" />
                       </button>
                       <div className="h-4 w-[1px] bg-white/10 mx-0.5 flex-shrink-0" />
-                      {/* HTML Quick Inserts */}
+                      {/* Markdown Extras */}
                       <button
                         type="button"
-                        onClick={() => insertText('<div style="background: rgba(37,99,235,0.1); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 8px; margin: 12px 0;">', '</div>', 'Your highlighted note here')}
-                        className="p-1.5 text-blue-400 hover:text-white hover:bg-blue-600/30 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
-                        title="Insert HTML Box (<div>)"
+                        onClick={() => insertText("`", "`", "code")}
+                        className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
+                        title="Inline Code (`code`)"
                       >
                         <Code className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => insertText('<iframe width="100%" height="360" src="https://www.youtube.com/embed/', '" title="Video" frameborder="0" allowfullscreen style="border-radius: 12px; margin: 16px 0;"></iframe>', 'VIDEO_ID')}
-                        className="p-1.5 text-amber-400 hover:text-white hover:bg-amber-600/30 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
-                        title="Insert YouTube iframe"
+                        onClick={() => insertText("| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |\n", "")}
+                        className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
+                        title="Insert Markdown Table"
                       >
-                        <Tv className="w-3.5 h-3.5" />
+                        <Table className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => insertText('<span style="background: #10b981; color: #000; font-weight: bold; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">', '</span>', 'TAG')}
-                        className="p-1.5 text-emerald-400 hover:text-white hover:bg-emerald-600/30 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
-                        title="Insert HTML Badge (<span>)"
+                        onClick={() => insertText("- [ ] ", "", "Task item")}
+                        className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
+                        title="Task List"
                       >
-                        <Tag className="w-3.5 h-3.5" />
+                        <CheckSquare className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
                         onClick={() => insertText("\n\n---\n\n", "")}
                         className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
-                        title="Horizontal Divider"
+                        title="Horizontal Divider (---)"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
@@ -607,7 +578,7 @@ export default function WriteBlog() {
                     <textarea
                       ref={textareaRef}
                       id="content"
-                      placeholder="Write your story in Markdown or HTML... (or click 'Upload .md / .html' to import a file)"
+                      placeholder="Write your story in Markdown... (or click 'Upload .md' to import a file)"
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
                       className={`flex-grow w-full p-4 bg-white/10 backdrop-blur-md text-white placeholder:text-gray-500 rounded-xl border ${
@@ -618,16 +589,15 @@ export default function WriteBlog() {
                   </div>
                 ) : (
                   <div className="flex-grow w-full p-6 bg-white/5 border border-white/10 rounded-xl overflow-y-auto min-h-[380px] max-h-[550px] blog-render-container">
-                    <div className="prose prose-sm sm:prose-base prose-invert max-w-none text-white/80 break-words [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-xl [&_iframe]:my-4 [&_iframe]:border [&_iframe]:border-white/10 [&_table]:w-full [&_table]:my-4 [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-2.5 [&_th]:bg-white/10 [&_th]:text-white [&_td]:border [&_td]:border-white/10 [&_td]:p-2.5 [&_details]:bg-white/5 [&_details]:p-3 [&_details]:rounded-xl [&_details]:border [&_details]:border-white/10 [&_details]:my-3 [&_summary]:cursor-pointer [&_summary]:font-semibold [&_summary]:text-blue-400 [&_img]:rounded-xl [&_img]:border [&_img]:border-white/10">
+                    <div className="prose prose-sm sm:prose-base prose-invert max-w-none text-white/80 break-words [&_table]:w-full [&_table]:my-4 [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-2.5 [&_th]:bg-white/10 [&_th]:text-white [&_td]:border [&_td]:border-white/10 [&_td]:p-2.5 [&_img]:rounded-xl [&_img]:border [&_img]:border-white/10">
                       {content ? (
                         <ReactMarkdown
                           remarkPlugins={[remarkBreaks, remarkGfm]}
-                          rehypePlugins={[rehypeRaw]}
                         >
                           {normalizeContent(content)}
                         </ReactMarkdown>
                       ) : (
-                        <p className="text-white/40 italic">Nothing to preview yet. Start writing in the Write tab, or upload a .md / .html file!</p>
+                        <p className="text-white/40 italic">Nothing to preview yet. Start writing in the Write tab, or upload a .md file!</p>
                       )}
                     </div>
                   </div>

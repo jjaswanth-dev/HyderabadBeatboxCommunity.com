@@ -5,6 +5,7 @@ import Link from "next/link";
 import Section from "./Section";
 import LoadingSpinner from "./LoadingSpinner";
 import Image from "next/image";
+import { stripFormatting } from "@/lib/blogUtils";
 
 interface BlogType {
   _id: string;
@@ -92,7 +93,7 @@ export default function Blog({ initialLimit = 0 }: { initialLimit?: number }) {
                 </h3>
                 <p className="text-white/60 text-[10px] sm:text-xs md:text-sm mb-1.5 md:mb-3">By {blog.author}</p>
                 <p className="text-white/80 text-xs md:text-sm line-clamp-2 md:line-clamp-3">
-                  {blog.content.replace(/[#*`>_\-]/g, "").substring(0, 90)}...
+                  {stripFormatting(blog.content, 90)}
                 </p>
               </div>
             </Link>

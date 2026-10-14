@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import Link from "next/link";
 import Section from "./Section";
 import LoadingSpinner from "./LoadingSpinner";
 import { Share2, Check, Copy, MessageSquare } from "lucide-react";
+import { normalizeContent } from "@/lib/blogUtils";
 
 interface BlogType {
   _id: string;
@@ -30,7 +32,21 @@ function formatBlogDate(dateStr: string) {
   });
 }
 
-export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
+export default function BlogDetail({ 
+  initialBlog,
+  isAdminView = false,
+  onClose,
+  onEdit,
+  onApprove,
+  isPending = false
+}: { 
+  initialBlog: BlogType;
+  isAdminView?: boolean;
+  onClose?: () => void;
+  onEdit?: () => void;
+  onApprove?: () => void;
+  isPending?: boolean;
+}) {
   const [blog, setBlog] = useState<BlogType>(initialBlog);
   const [loading, setLoading] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
@@ -38,6 +54,10 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    setBlog(initialBlog);
+  }, [initialBlog]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -110,59 +130,63 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
 
   return (
     <>
-      {/* Sticky Header (shows only when scrolled past the static header, fixed full-width black top bar) */}
-      <div
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 transform ${
-          isSticky 
-            ? "translate-y-0 opacity-100" 
-            : "-translate-y-full opacity-0 pointer-events-none"
-        }`}
-      >
-        <div className="bg-black/95 backdrop-blur-md border-b border-white/10 py-3 px-4 md:px-8 relative shadow-xl">
-          <div className="container mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 md:gap-4 min-w-0">
-              <img
-                src={
-                  blog.image.startsWith("data:image")
-                    ? blog.image
-                    : `${blog.image}?tr=w-100,h-100,fo-auto,q-80`
-                }
-                alt={blog.title}
-                className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-lg border border-white/10 flex-shrink-0"
-              />
-              <div className="min-w-0">
-                <h4 className="text-white font-bold truncate text-sm md:text-base tracking-tight">
-                  {blog.title}
-                </h4>
-                <p className="text-white/60 text-xs truncate">
-                  By {blog.author}
-                </p>
+      {/* Sticky Header (shows only for public visitor view when scrolled) */}
+      {!isAdminView && (
+        <div
+          className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 transform ${
+            isSticky 
+              ? "translate-y-0 opacity-100" 
+              : "-translate-y-full opacity-0 pointer-events-none"
+          }`}
+        >
+          <div className="bg-black/95 backdrop-blur-md border-b border-white/10 py-3 px-4 md:px-8 relative shadow-xl">
+            <div className="container mx-auto flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                <img
+                  src={
+                    blog.image.startsWith("data:image")
+                      ? blog.image
+                      : `${blog.image}?tr=w-100,h-100,fo-auto,q-80`
+                  }
+                  alt={blog.title}
+                  className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-lg border border-white/10 flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <h4 className="text-white font-bold truncate text-sm md:text-base tracking-tight">
+                    {blog.title}
+                  </h4>
+                  <p className="text-white/60 text-xs truncate">
+                    By {blog.author}
+                  </p>
+                </div>
               </div>
+
+              <Link
+                href="/#blog"
+                className="text-xs md:text-sm font-bold bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white px-4 py-2 rounded-full transition-all duration-300 flex-shrink-0 flex items-center gap-1.5"
+              >
+                &larr; <span className="hidden sm:inline">Back to</span> Home
+              </Link>
             </div>
 
-            <Link
-              href="/#blog"
-              className="text-xs md:text-sm font-bold bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white px-4 py-2 rounded-full transition-all duration-300 flex-shrink-0 flex items-center gap-1.5"
-            >
-              &larr; <span className="hidden sm:inline">Back to</span> Home
+            {/* Reading Progress Bar */}
+            <div
+              className="absolute bottom-0 left-0 h-[3px] bg-neutral-500 transition-all duration-100 ease-out"
+              style={{ width: `${readingProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <Section className={isAdminView ? "py-0" : "py-2 md:py-4"}>
+      <div className={`container mx-auto relative ${isAdminView ? "px-0" : "px-4 md:px-10"}`}>
+        {!isAdminView && (
+          <div className="mb-8">
+            <Link href="/#blog" className="text-blue-500 hover:underline">
+              &larr; Back to Home
             </Link>
           </div>
-
-          {/* Reading Progress Bar */}
-          <div
-            className="absolute bottom-0 left-0 h-[3px] bg-neutral-500 transition-all duration-100 ease-out"
-            style={{ width: `${readingProgress}%` }}
-          />
-        </div>
-      </div>
-
-      <Section className="py-2 md:py-4">
-      <div className="container mx-auto px-4 md:px-10 relative">
-        <div className="mb-8">
-          <Link href="/#blog" className="text-blue-500 hover:underline">
-            &larr; Back to Home
-          </Link>
-        </div>
+        )}
 
         {/* 1. Static inline header (scrolls naturally out of view) */}
         <div className="mb-12">
@@ -185,8 +209,13 @@ export default function BlogDetail({ initialBlog }: { initialBlog: BlogType }) {
           </p>
         </div>
 
-        <div className="prose prose-sm sm:prose-base md:prose-lg prose-invert max-w-none text-white/80 mx-auto">
-          <ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>{blog.content}</ReactMarkdown>
+        <div className="prose prose-sm sm:prose-base md:prose-lg prose-invert max-w-none text-white/80 mx-auto break-words [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-xl [&_iframe]:my-6 [&_iframe]:border [&_iframe]:border-white/10 [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-3 [&_th]:bg-white/10 [&_th]:text-white [&_td]:border [&_td]:border-white/10 [&_td]:p-3 [&_details]:bg-white/5 [&_details]:p-4 [&_details]:rounded-xl [&_details]:border [&_details]:border-white/10 [&_details]:my-4 [&_summary]:cursor-pointer [&_summary]:font-semibold [&_summary]:text-blue-400 [&_img]:rounded-xl [&_img]:border [&_img]:border-white/10">
+          <ReactMarkdown 
+            remarkPlugins={[remarkBreaks, remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+          >
+            {normalizeContent(blog.content)}
+          </ReactMarkdown>
         </div>
 
         {/* Share Section */}

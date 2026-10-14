@@ -3,6 +3,7 @@ import Blog from '@/models/Blog';
 import BlogDetail from "@/components/BlogDetail";
 import { notFound } from "next/navigation";
 import { Metadata } from 'next';
+import { stripFormatting } from '@/lib/blogUtils';
 
 interface Params {
   id: string;
@@ -21,9 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     }
 
     const title = `${blog.title} | Hyderabad Beatbox Community`;
-    const description = blog.content
-      .replace(/[#*`>_\-]/g, "") // strip markdown symbols for clean text preview
-      .substring(0, 150) + "...";
+    const description = stripFormatting(blog.content, 150);
     
     const imageUrl = blog.image.startsWith("data:image") ? "" : blog.image;
 

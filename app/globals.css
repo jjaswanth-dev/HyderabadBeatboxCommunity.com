@@ -272,3 +272,9 @@ body::-webkit-scrollbar {
 .animate-button-glow {
   animation: button-glow-pulse 3s infinite ease-in-out;
 }
+
+/* Scoped container for blog HTML/Markdown rendering so embedded styles don't bleed out */
+.blog-render-container {
+  contain: style;
+}
+

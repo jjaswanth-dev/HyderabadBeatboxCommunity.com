@@ -38,21 +38,132 @@ export function stripFormatting(content: string, maxLength?: number): string {
 }
 
 /**
+ * Scopes CSS rules inside a <style> block so they only apply within an enclosing container class
+ * (e.g. .blog-render-container). This prevents styles uploaded in HTML files (like :root, html, body,
+ * *, h1, etc.) from breaking the global website layout, navbar, inputs, and preview screens.
+ */
+export function scopeCss(css: string, containerClass: string = ".blog-render-container"): string {
+  if (!css) return "";
+
+  // Helper to prefix a selector list (e.g. "h1, p, .custom-box")
+  const prefixSelectors = (selectors: string): string => {
+    return selectors
+      .split(",")
+      .map((sel) => {
+        let trimmed = sel.trim();
+        if (!trimmed) return "";
+
+        // Global/document root elements mapped to the container
+        if (
+          trimmed === ":root" ||
+          trimmed === "html" ||
+          trimmed === "body"
+        ) {
+          return containerClass;
+        }
+
+        if (trimmed.startsWith(":root") || trimmed.startsWith("html") || trimmed.startsWith("body")) {
+          trimmed = trimmed.replace(/^(:root|html|body)\s*/, "");
+          if (!trimmed) return containerClass;
+        }
+
+        // Universal selector "*" -> target all elements inside container
+        if (trimmed === "*") {
+          return `${containerClass} *`;
+        }
+
+        // Standard selector -> nest within container
+        return `${containerClass} ${trimmed}`;
+      })
+      .filter(Boolean)
+      .join(", ");
+  };
+
+  // Process CSS block by block (handles @media, @keyframes, and normal rules)
+  let result = "";
+  let i = 0;
+
+  while (i < css.length) {
+    const nextOpen = css.indexOf("{", i);
+    if (nextOpen === -1) {
+      result += css.slice(i);
+      break;
+    }
+
+    const selectorPart = css.slice(i, nextOpen).trim();
+
+    // Check for @keyframes or other @-rules that contain sub-blocks
+    if (selectorPart.startsWith("@keyframes") || selectorPart.startsWith("@-webkit-keyframes") || selectorPart.startsWith("@font-face")) {
+      // Find matching outer closing brace
+      let depth = 1;
+      let j = nextOpen + 1;
+      while (j < css.length && depth > 0) {
+        if (css[j] === "{") depth++;
+        else if (css[j] === "}") depth--;
+        j++;
+      }
+      result += css.slice(i, j);
+      i = j;
+      continue;
+    }
+
+    if (selectorPart.startsWith("@media") || selectorPart.startsWith("@supports")) {
+      // Find matching closing brace of @media
+      let depth = 1;
+      let j = nextOpen + 1;
+      while (j < css.length && depth > 0) {
+        if (css[j] === "{") depth++;
+        else if (css[j] === "}") depth--;
+        j++;
+      }
+      const mediaHeader = selectorPart;
+      const innerCss = css.slice(nextOpen + 1, j - 1);
+      result += `${mediaHeader} {\n${scopeCss(innerCss, containerClass)}\n}\n`;
+      i = j;
+      continue;
+    }
+
+    // Normal CSS rule
+    const nextClose = css.indexOf("}", nextOpen);
+    if (nextClose === -1) {
+      result += css.slice(i);
+      break;
+    }
+
+    const declarations = css.slice(nextOpen + 1, nextClose);
+    const scopedSelector = prefixSelectors(selectorPart);
+    if (scopedSelector) {
+      result += `${scopedSelector} {${declarations}}\n`;
+    }
+
+    i = nextClose + 1;
+  }
+
+  return result;
+}
+
+/**
  * Normalizes Markdown and HTML content before rendering via ReactMarkdown + rehypeRaw.
  *
- * Markdown (CommonMark) treats lines indented by 4 spaces or tabs following an empty line
- * as an indented code block (<pre><code>). In AI-generated HTML or formatted HTML files,
- * nested elements are indented by 2, 4, or more spaces.
+ * 1. Markdown (CommonMark) treats lines indented by 4 spaces or tabs following an empty line
+ *    as an indented code block (<pre><code>). In AI-generated HTML or formatted HTML files,
+ *    nested elements are indented by 2, 4, or more spaces. This strips unwanted leading indentation
+ *    outside code blocks so elements are rendered as live HTML.
  *
- * This function preserves intentional fenced code blocks (```...```) while stripping
- * leading indentation from lines starting with HTML tags or closing tags, ensuring they
- * are parsed as live HTML elements instead of raw text inside a code block.
+ * 2. Scopes any <style> tags within the content so their CSS rules (e.g. :root, *, html, body, font sizes)
+ *    do NOT leak into the global document and corrupt the site styling when in Live Preview or Reading mode.
  */
-export function normalizeContent(content: string): string {
+export function normalizeContent(content: string, containerClass: string = ".blog-render-container"): string {
   if (!content) return "";
 
-  // Split by fenced code blocks (```...```) to keep real code snippets intact
-  const parts = content.split(/(```[\s\S]*?```)/g);
+  // 1. First, scope any <style>...</style> blocks that are NOT inside markdown code fences
+  let processed = content.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (_match, openTag, cssContent, closeTag) => {
+    const scoped = scopeCss(cssContent, containerClass);
+    return `${openTag}\n${scoped}\n${closeTag}`;
+  });
+
+  // 2. Split by fenced code blocks (```...```) to keep real code snippets intact
+  const parts = processed.split(/(```[\s\S]*?```)/g);
 
   return parts
     .map((part, index) => {
@@ -67,3 +178,4 @@ export function normalizeContent(content: string): string {
     })
     .join("");
 }
+

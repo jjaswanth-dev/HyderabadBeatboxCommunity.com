@@ -6,11 +6,13 @@ import Image from "next/image";
 import Link from "next/link";
 import TicketButton from "@/components/TicketButton";
 
-export default function ImageCarousel() {
+export default function ImageCarousel({ initialImages = ["/home1.webp"] }: { initialImages?: string[] }) {
   const [currentImage, setCurrentImage] = useState(0);
-  // const [images, setImages] = useState<string[]>(["/home1.webp", "/home2.webp"]); # need to add again after sep 27th
-  const [images, setImages] = useState<string[]>([]);
-  const [isCarouselVisible, setIsCarouselVisible] = useState(false);
+  // Initialize with server pre-fetched images (or fallback to single static /home1.webp)
+  const [images, setImages] = useState<string[]>(
+    initialImages && initialImages.length > 0 ? initialImages : ["/home1.webp"]
+  );
+  const [isCarouselVisible, setIsCarouselVisible] = useState(true);
   const [isWildcardActive, setIsWildcardActive] = useState(false);
   const [ticketConfig, setTicketConfig] = useState<{
     isActive: boolean;
@@ -48,6 +50,7 @@ export default function ImageCarousel() {
     checkStatuses();
   }, []);
 
+  // Sync with client-side API in the background (if admin recently uploaded new images)
   useEffect(() => {
     const fetchImages = async () => {
       try {
@@ -55,15 +58,11 @@ export default function ImageCarousel() {
         const data = await res.json();
 
         if (data && data.length > 0) {
-          // Keep local images first for performance, then append DB images
           const dbImages = data.map((item: any) => item.image);
-          // setImages(["/home1.webp", "/home2.webp", ...dbImages]);
-          setImages([...dbImages]);
+          setImages(dbImages);
         }
       } catch (error) {
         console.error("Error fetching carousel images:", error);
-      } finally {
-        setIsCarouselVisible(true);
       }
     };
 
@@ -81,20 +80,23 @@ export default function ImageCarousel() {
   return (
     <div id="home" className="relative h-screen overflow-hidden bg-black">
       <div
-        className={`absolute inset-0 transition-opacity duration-400 ${isCarouselVisible ? "opacity-100" : "opacity-0"
-          }`}
+        className={`absolute inset-0 transition-opacity duration-400 ${
+          isCarouselVisible ? "opacity-100" : "opacity-0"
+        }`}
       >
         {images.map((src, index) => (
           <div
             key={`${src}-${index}`}
-            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentImage ? "opacity-100" : "opacity-0"
-              }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentImage ? "opacity-100" : "opacity-0"
+            }`}
           >
             <Image
               src={src}
               alt={`Slide ${index + 1}`}
               fill
               priority={index === 0}
+              unoptimized={src.startsWith("http")}
               className="object-cover scale-100"
               sizes="100vw"
             />

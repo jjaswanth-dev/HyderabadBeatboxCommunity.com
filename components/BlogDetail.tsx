@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import Link from "next/link";
 import Section from "./Section";
 import LoadingSpinner from "./LoadingSpinner";
@@ -209,10 +208,9 @@ export default function BlogDetail({
           </p>
         </div>
 
-        <div className="blog-render-container prose prose-sm sm:prose-base md:prose-lg prose-invert max-w-none text-white/80 mx-auto break-words [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-xl [&_iframe]:my-6 [&_iframe]:border [&_iframe]:border-white/10 [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-3 [&_th]:bg-white/10 [&_th]:text-white [&_td]:border [&_td]:border-white/10 [&_td]:p-3 [&_details]:bg-white/5 [&_details]:p-4 [&_details]:rounded-xl [&_details]:border [&_details]:border-white/10 [&_details]:my-4 [&_summary]:cursor-pointer [&_summary]:font-semibold [&_summary]:text-blue-400 [&_img]:rounded-xl [&_img]:border [&_img]:border-white/10">
+        <div className="blog-render-container prose prose-sm sm:prose-base md:prose-lg prose-invert max-w-none text-white/80 mx-auto break-words [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-3 [&_th]:bg-white/10 [&_th]:text-white [&_td]:border [&_td]:border-white/10 [&_td]:p-3 [&_img]:rounded-xl [&_img]:border [&_img]:border-white/10">
           <ReactMarkdown 
             remarkPlugins={[remarkBreaks, remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
           >
             {normalizeContent(blog.content)}
           </ReactMarkdown>

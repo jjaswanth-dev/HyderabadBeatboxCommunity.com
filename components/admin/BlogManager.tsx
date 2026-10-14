@@ -712,7 +712,7 @@ export default function BlogManager() {
                     placeholder="Enter or paste Markdown or HTML here..."
                   />
                 ) : (
-                  <div className="p-5 bg-white/5 border border-white/10 rounded-xl overflow-y-auto max-h-[420px]">
+                  <div className="p-5 bg-white/5 border border-white/10 rounded-xl overflow-y-auto max-h-[420px] blog-render-container">
                     <div className="prose prose-sm prose-invert max-w-none text-white/80 break-words [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-xl [&_iframe]:my-4 [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-2.5 [&_td]:border [&_td]:border-white/10 [&_td]:p-2.5">
                       <ReactMarkdown
                         remarkPlugins={[remarkBreaks, remarkGfm]}

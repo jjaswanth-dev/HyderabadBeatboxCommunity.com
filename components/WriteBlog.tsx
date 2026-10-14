@@ -617,7 +617,7 @@ export default function WriteBlog() {
                     {errors.content && <p className="text-red-500 text-xs mt-1.5">{errors.content}</p>}
                   </div>
                 ) : (
-                  <div className="flex-grow w-full p-6 bg-white/5 border border-white/10 rounded-xl overflow-y-auto min-h-[380px] max-h-[550px]">
+                  <div className="flex-grow w-full p-6 bg-white/5 border border-white/10 rounded-xl overflow-y-auto min-h-[380px] max-h-[550px] blog-render-container">
                     <div className="prose prose-sm sm:prose-base prose-invert max-w-none text-white/80 break-words [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-xl [&_iframe]:my-4 [&_iframe]:border [&_iframe]:border-white/10 [&_table]:w-full [&_table]:my-4 [&_table]:border-collapse [&_th]:border [&_th]:border-white/20 [&_th]:p-2.5 [&_th]:bg-white/10 [&_th]:text-white [&_td]:border [&_td]:border-white/10 [&_td]:p-2.5 [&_details]:bg-white/5 [&_details]:p-3 [&_details]:rounded-xl [&_details]:border [&_details]:border-white/10 [&_details]:my-3 [&_summary]:cursor-pointer [&_summary]:font-semibold [&_summary]:text-blue-400 [&_img]:rounded-xl [&_img]:border [&_img]:border-white/10">
                       {content ? (
                         <ReactMarkdown

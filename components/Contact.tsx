@@ -45,8 +45,17 @@ export default function Contact() {
       <p className="mb-1 text-white/50 text-xs">
         {`© ${new Date().getFullYear()} Hyderabad Beatbox Community. All rights reserved.`}
       </p>
-      <div className="text-center text-white/40 text-[10px]">
-        Developed by X Boy
+      <div className="text-center text-white/50 text-[11px] mt-1 tracking-wide">
+        Website Designed &amp; Developed by{" "}
+        <a
+          href="https://www.instagram.com/xboy.bx/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-white hover:text-sky-400 font-semibold underline underline-offset-2 transition-colors"
+          title="X Boy - Official Web Developer of Hyderabad Beatbox Community"
+        >
+          X Boy (@xboy.bx)
+        </a>
       </div>
     </footer>
   );

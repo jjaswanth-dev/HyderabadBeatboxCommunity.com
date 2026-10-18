@@ -111,12 +111,18 @@ const jsonLd = {
       author: {
         "@type": "Person",
         name: "X Boy",
-        jobTitle: "Web Developer & Designer",
-        description: "Developer and maintainer of the official Hyderabad Beatbox Community website.",
+        alternateName: ["xboybx", "xboy.bx"],
+        jobTitle: "Full-Stack Web Developer & Designer",
+        url: "https://www.instagram.com/xboy.bx/",
+        sameAs: [
+          "https://www.instagram.com/xboy.bx/"
+        ],
+        description: "Official web developer, designer, and maintainer of the Hyderabad Beatbox Community platform.",
       },
       creator: {
         "@type": "Person",
         name: "X Boy",
+        url: "https://www.instagram.com/xboy.bx/",
       },
     },
   ],

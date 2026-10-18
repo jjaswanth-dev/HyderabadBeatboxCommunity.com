@@ -112,7 +112,7 @@ const jsonLd = {
         "@type": "Person",
         name: "X Boy",
         alternateName: ["xboybx", "xboy.bx"],
-        jobTitle: "Full-Stack Web Developer & Designer",
+        jobTitle: "Web Developer & Designer",
         url: "https://www.instagram.com/xboy.bx/",
         sameAs: [
           "https://www.instagram.com/xboy.bx/"
@@ -136,8 +136,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${lexend.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#000000" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" media="(prefers-color-scheme: light)" href="/apple-touch-icon-light.png" />
+        <link rel="apple-touch-icon" sizes="180x180" media="(prefers-color-scheme: dark)" href="/apple-touch-icon.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -75,6 +75,14 @@ export const metadata: Metadata = {
     images: ["/HBX logoo.png"],
   },
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon.png", sizes: "96x96", type: "image/png" },
+    ],
+    shortcut: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -91,7 +99,8 @@ const jsonLd = {
       name: "Hyderabad Beatbox Community",
       alternateName: ["HBX", "Hyd Beatbox Community"],
       url: "https://www.hyderabadbeatboxcommunity.in",
-      logo: "https://www.hyderabadbeatboxcommunity.in/HBX%20logoo.png",
+      logo: "https://www.hyderabadbeatboxcommunity.in/icon-192.png",
+      image: "https://www.hyderabadbeatboxcommunity.in/icon-192.png",
       sameAs: [
         "https://www.instagram.com/hydbeatboxcommunity/",
         "https://chat.whatsapp.com/DPog876RSEyFJOHhgB98Ty?mode=hqrc",
@@ -138,6 +147,8 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+        <link rel="shortcut icon" href="/icon-192.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="180x180" media="(prefers-color-scheme: light)" href="/apple-touch-icon-light.png" />
